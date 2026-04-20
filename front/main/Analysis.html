@@ -1,0 +1,526 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+  <meta charset="UTF-8">
+  <title>CLAIR — Анализ</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="../assets/css/style.css">
+
+  <style>
+    .analysis-page main {
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      padding: 20px;
+      gap: 20px;
+      width: 100%;
+      overflow-y: auto;
+    }
+
+    /* hide scrollbar but keep scroll functionality */
+    .analysis-page main {
+      -ms-overflow-style: none;
+      /* IE and Edge */
+      scrollbar-width: none;
+      /* Firefox */
+    }
+
+    .analysis-page main::-webkit-scrollbar {
+      display: none;
+    }
+
+    /* Chrome/Safari */
+
+    /* Панель поиска и фильтров */
+    .search-filters {
+      width: 100%;
+      max-width: 900px;
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+      background: #fff;
+      padding: 20px;
+      border-radius: 16px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    }
+
+    .local-search input {
+      width: 100%;
+      padding: 12px 20px;
+      border-radius: 25px;
+      border: 2px solid #eef0ff;
+      outline: none;
+      font-size: 14px;
+      transition: 0.3s;
+    }
+
+    .local-search input:focus {
+      border-color: #2e44ff;
+      box-shadow: 0 0 8px rgba(46, 68, 255, 0.1);
+    }
+
+    .filters {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    .filters button {
+      background: #f0f2ff;
+      color: #2e44ff;
+      border: none;
+      border-radius: 20px;
+      padding: 8px 18px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: 0.2s;
+    }
+
+    .filters button:hover {
+      background: #e0e4ff;
+    }
+
+    .filters button.active {
+      background: #2e44ff;
+      color: #fff;
+    }
+
+    /* Список карточек */
+    .complaints {
+      width: 100%;
+      max-width: 900px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .complaint-card {
+      background: #fff;
+      border-radius: 16px;
+      padding: 18px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+      border-left: 6px solid #ccc;
+      transition: transform 0.2s;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .complaint-card:hover {
+      transform: translateY(-2px);
+    }
+
+    /* Цвета рамок по типам (соответствуют твоей БД) */
+    .type-request {
+      border-left-color: #3b82f6;
+    }
+
+    /* Обращение */
+    .type-suggestion {
+      border-left-color: #22c55e;
+    }
+
+    /* Предложение */
+    .type-criticism {
+      border-left-color: #f59e0b;
+    }
+
+    /* Критика */
+    .type-bug {
+      border-left-color: #ef4444;
+    }
+
+    /* Ошибка */
+
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 10px;
+      font-size: 12px;
+      color: #888;
+    }
+
+    .channel-name {
+      color: #2e44ff;
+      font-weight: 700;
+      font-size: 14px;
+    }
+
+    .complaint-text {
+      font-size: 15px;
+      line-height: 1.5;
+      color: #333;
+      flex-grow: 1;
+    }
+
+    .type-badge {
+      font-size: 10px;
+      text-transform: uppercase;
+      padding: 2px 8px;
+      border-radius: 10px;
+      background: #f0f0f0;
+      margin-top: 10px;
+      display: inline-block;
+      align-self: flex-start;
+      font-weight: bold;
+      color: #666;
+    }
+
+    /* Controls and modal styling */
+    .controls-row {
+      width: 100%;
+      max-width: 900px;
+      margin-top: 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .control-group {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .select-style {
+      padding: 8px 12px;
+      border-radius: 10px;
+      border: 1px solid #e6e8ff;
+      background: #fff;
+      color: #0b2340;
+    }
+
+    #paginationControls button {
+      background: #2e44ff;
+      color: #fff;
+      border: none;
+      padding: 6px 10px;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+
+    #paginationControls span {
+      color: #0b2340;
+      font-weight: 600;
+    }
+
+    /* fixed bottom centered numeric pagination */
+    #paginationControls {
+      position: fixed;
+      bottom: 18px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      z-index: 1500;
+      background: rgba(255, 255, 255, 0.92);
+      padding: 8px 12px;
+      border-radius: 12px;
+      box-shadow: 0 8px 30px rgba(16, 24, 40, 0.08);
+    }
+
+    .modal-calendar-overlay {
+      position: fixed;
+      left: 0;
+      top: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.45);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 2000;
+    }
+
+    .modal-calendar-overlay.active {
+      display: flex;
+    }
+
+    .modal-calendar {
+      background: #fff;
+      border-radius: 12px;
+      padding: 18px;
+      width: 360px;
+      box-shadow: 0 10px 30px rgba(16, 24, 40, 0.2);
+      border: 1px solid #eef2ff;
+    }
+
+    .modal-calendar h3 {
+      margin: 0 0 8px 0;
+      color: #0b2340;
+    }
+
+    .modal-calendar .actions {
+      display: flex;
+      gap: 8px;
+      justify-content: flex-end;
+      margin-top: 12px;
+    }
+
+    .modal-calendar .btn {
+      padding: 8px 12px;
+      border-radius: 8px;
+      border: none;
+      cursor: pointer;
+    }
+
+    .modal-calendar .btn.primary {
+      background: #2e44ff;
+      color: #fff;
+    }
+
+    .modal-calendar .btn.secondary {
+      background: #f0f4ff;
+      color: #0b2340;
+    }
+  </style>
+</head>
+
+<body class="analysis-page">
+
+  <div class="container">
+    <div id="header"></div>
+
+    <div class="nav-buttons">
+      <button class="btn-back" onclick="goBack()">Назад</button>
+      <button class="btn-home" onclick="goHome()">Главная</button>
+    </div>
+
+    <main>
+      <h1 class="page-title" style="color:#2e44ff; font-size: 24px;">Анализ контента</h1>
+
+      <div class="filters" id="filterButtons" style="width:100%; max-width:900px; margin-top:12px;">
+        <button class="active" data-type="all">Все</button>
+        <button data-type="request">Обращения</button>
+        <button data-type="suggestion">Предложения</button>
+        <button data-type="criticism">Критика</button>
+        <button data-type="bug">Ошибки</button>
+      </div>
+
+      <div style="width:100%; max-width:900px; margin-top:8px; display:flex; justify-content:center;">
+        <input id="searchInput" type="text" placeholder="Поиск по тексту или каналу..."
+          style="width:100%; max-width:600px; padding:10px; border-radius:12px; border:1px solid #e6e8ff;">
+      </div>
+
+      <div
+        style="width:100%; max-width:900px; margin-top:12px; display:flex; justify-content:space-between; align-items:center;">
+        <div></div>
+        <div id="paginationControls"></div>
+      </div>
+
+      <div class="complaints" id="complaintsContainer">
+        <p style="text-align:center; color:#999;">Загрузка данных...</p>
+      </div>
+    </main>
+
+    <div style="height:120px;"></div>
+  </div>
+
+  <!-- date controls removed per request -->
+
+  <script src="../scripts/config.js"></script>
+  <script src="../scripts/common.js"></script>
+  <script>
+    const searchInput = document.getElementById('searchInput');
+    const complaintsContainer = document.getElementById('complaintsContainer');
+
+    // Словарь красивых названий
+    const typeLabels = {
+      request: "Обращение",
+      suggestion: "Предложение",
+      criticism: "Критика",
+      bug: "Ошибка / Баг"
+    };
+
+    async function loadAnalysis() {
+      const selectedIds = JSON.parse(localStorage.getItem("selected_channels") || "[]");
+      const token = window.getAuthToken();
+
+      if (selectedIds.length === 0) {
+        complaintsContainer.innerHTML = '<p style="text-align:center;color:#999;margin-top:50px;">Сначала выберите каналы на соответствующей странице.</p>';
+        return;
+      }
+
+      try {
+        const response = await fetch(`${window.API_BASE}/api/reports/channels`, {
+          headers: { "Authorization": `Bearer ${window.getAuthToken()}` }
+        });
+
+        if (!response.ok) throw new Error("Unauthorized");
+
+        const data = await response.json();
+        // Фильтруем данные только для выбранных каналов
+        const channels = data.channels.filter(ch => selectedIds.includes(String(ch.id)));
+
+        const allAppeals = [];
+        channels.forEach(ch => {
+          (ch.appeals || []).forEach(app => {
+            // Собираем только полезные типы (не аномалии)
+            if (["request", "suggestion", "criticism", "bug"].includes(app.type)) {
+              allAppeals.push({ ...app, channelName: ch.name });
+            }
+          });
+        });
+
+        renderAppeals(allAppeals);
+      } catch (err) {
+        console.error(err);
+        complaintsContainer.innerHTML = '<p style="color:red; text-align:center;margin-top:50px;">Ошибка доступа. Перезайдите в систему.</p>';
+      }
+    }
+
+    // Pagination & rendering
+    let allAppealsList = [];
+    let filteredAppeals = [];
+    let currentPage = 1;
+    const pageSize = 30;
+
+    function renderAppeals(list) {
+      allAppealsList = list.slice();
+      // default sort by created_at desc if available
+      allAppealsList.sort((a, b) => (new Date(b.created_at || 0)) - (new Date(a.created_at || 0)));
+      updateFiltersAndShow();
+    }
+
+    function updateFiltersAndShow() {
+      // apply type and search filters + date range
+      const query = (searchInput.value || '').toLowerCase();
+      const activeBtn = document.querySelector('#filterButtons button.active');
+      const activeType = activeBtn ? activeBtn.dataset.type : 'all';
+      // date filters removed
+      const dateRange = 'all';
+      const startInput = null;
+      const endInput = null;
+
+      filteredAppeals = allAppealsList.filter(item => {
+        const text = (item.ai_comment + ' ' + (item.channelName || '')).toLowerCase();
+        const matchesSearch = !query || text.includes(query);
+        const matchesType = (activeType === 'all') || item.type === activeType;
+
+        // date filter
+        let okDate = true;
+        if (dateRange !== 'all') {
+          const created = item.created_at ? new Date(item.created_at) : null;
+          if (created) {
+            const now = new Date();
+            if (dateRange === 'year') okDate = created >= new Date(now.getFullYear() - 1, now.getMonth(), now.getDate());
+            else if (dateRange === '6months') okDate = created >= new Date(now.getFullYear(), now.getMonth() - 6, now.getDate());
+            else if (dateRange === 'month') okDate = created >= new Date(now.getFullYear(), now.getMonth() - 1, now.getDate());
+            else if (dateRange === 'week') okDate = created >= new Date(now.getTime() - 7 * 24 * 3600 * 1000);
+            else if (dateRange === 'day') okDate = created >= new Date(now.getTime() - 24 * 3600 * 1000);
+            else if (dateRange === 'custom') {
+              const s = startInput.value ? new Date(startInput.value) : null;
+              const e = endInput.value ? new Date(endInput.value) : null;
+              if (s && created < s) okDate = false;
+              if (e && created > e) okDate = false;
+            }
+          }
+        }
+
+        return matchesSearch && matchesType && okDate;
+      });
+
+      currentPage = 1;
+      showPage(currentPage);
+    }
+
+    function showPage(page) {
+      complaintsContainer.innerHTML = '';
+      const total = filteredAppeals.length;
+      const pages = Math.max(1, Math.ceil(total / pageSize));
+      if (page < 1) page = 1;
+      if (page > pages) page = pages;
+      currentPage = page;
+      const start = (page - 1) * pageSize;
+      const slice = filteredAppeals.slice(start, start + pageSize);
+
+      if (slice.length === 0) {
+        complaintsContainer.innerHTML = '<p style="text-align:center;color:#999;margin-top:50px;">Нет сообщений по выбранным фильтрам.</p>';
+      }
+
+      slice.forEach(item => {
+        const card = document.createElement('div');
+        card.className = `complaint-card type-${item.type}`;
+        card.dataset.type = item.type;
+        const time = item.created_at ? new Date(item.created_at).toLocaleString() : new Date().toLocaleString();
+        card.innerHTML = `
+          <div class="card-header">
+            <span class="channel-name">📱 ${item.channelName}</span>
+            <span>${time}</span>
+          </div>
+          <div class="complaint-text">${item.ai_comment || 'Обработано AI: конструктивный контент'}</div>
+          <div class="type-badge">${typeLabels[item.type] || item.type}</div>
+        `;
+        complaintsContainer.appendChild(card);
+      });
+
+      renderPagination(pages);
+    }
+
+    function renderPagination(totalPages) {
+      const container = document.getElementById('paginationControls');
+      if (!container) return;
+      container.innerHTML = '';
+      container.style.display = 'flex';
+      container.style.justifyContent = 'center';
+      container.style.gap = '6px';
+      container.style.position = 'fixed';
+      container.style.bottom = '70px';
+      container.style.left = '50%';
+      container.style.transform = 'translateX(-50%)';
+      container.style.zIndex = '1000';
+
+      const createPageBtn = (p) => {
+        const btn = document.createElement('button');
+        btn.textContent = p;
+        btn.style.padding = '6px 10px';
+        if (p === currentPage) { btn.style.background = '#fff'; btn.style.color = '#0b2340'; btn.style.border = '1px solid #e6e8ff'; }
+        btn.onclick = () => showPage(p);
+        btn.style.cursor = 'pointer';
+        return btn;
+      };
+
+      container.appendChild(createPageBtn(1));
+      if (currentPage - 3 > 2) { const ell = document.createElement('span'); ell.textContent = '...'; ell.style.padding = '6px 8px'; container.appendChild(ell); }
+      const start = Math.max(2, currentPage - 2);
+      const end = Math.min(totalPages - 1, currentPage + 2);
+      for (let p = start; p <= end; p++) container.appendChild(createPageBtn(p));
+      if (currentPage + 3 < totalPages) { const ell = document.createElement('span'); ell.textContent = '...'; ell.style.padding = '6px 8px'; container.appendChild(ell); }
+      if (totalPages > 1) container.appendChild(createPageBtn(totalPages));
+    }
+
+    // Универсальная функция фильтрации и поиска
+    function applyFilters() {
+      updateFiltersAndShow();
+    }
+
+    // Слушатели событий
+    document.getElementById('filterButtons').addEventListener('click', (e) => {
+      const btn = e.target.closest('button');
+      if (!btn) return;
+
+      document.querySelectorAll('#filterButtons button').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      updateFiltersAndShow();
+    });
+
+    searchInput.addEventListener('input', applyFilters);
+
+    // date controls removed per request
+
+    // Инициализация
+    document.addEventListener('DOMContentLoaded', () => {
+      if (typeof loadHeader === 'function') loadHeader();
+      if (typeof loadFooter === 'function') loadFooter();
+      loadAnalysis();
+    });
+
+    function goBack() { window.history.back(); }
+    function goHome() { window.location.href = "home.html"; }
+  </script>
+</body>
+
+</html>

@@ -1,0 +1,167 @@
+1. Проверка сервера
+GET /ping
+GET http://localhost:3000/ping
+2. Авторизация
+Регистрация
+POST http://localhost:3000/api/auth/register
+Content-Type: application/json
+{
+  "username": "ali",
+  "password": "123456",
+  "full_name": "Ali Kabiev",
+  "email": "ali@test.com",
+  "tg_push": false
+}
+Логин
+POST http://localhost:3000/api/auth/login
+Content-Type: application/json
+{
+  "username": "ali",
+  "password": "123456"
+}
+Получить текущего пользователя
+GET http://localhost:3000/api/auth/me
+Authorization: Bearer JWT_HERE
+История логинов
+GET http://localhost:3000/api/auth/login-history?limit=20
+Authorization: Bearer JWT_HERE
+Тестовый protected route
+GET http://localhost:3000/api/me
+Authorization: Bearer JWT_HERE
+3. Профиль
+Обновить профиль
+PATCH http://localhost:3000/api/profile
+Authorization: Bearer JWT_HERE
+Content-Type: application/json
+{
+  "full_name": "Ali Kabiev",
+  "email": "ali@test.com"
+}
+Сменить пароль
+PATCH http://localhost:3000/api/profile/password
+Authorization: Bearer JWT_HERE
+Content-Type: application/json
+{
+  "current_password": "123456",
+  "new_password": "12345678"
+}
+4. Gemini API key
+Сохранить или заменить ключ
+PATCH http://localhost:3000/api/me/gemini-key
+Authorization: Bearer JWT_HERE
+Content-Type: application/json
+{
+  "gemini_api_key": "AIza...."
+}
+Удалить ключ
+DELETE http://localhost:3000/api/me/gemini-key
+Authorization: Bearer JWT_HERE
+5. Каналы
+Создать канал
+POST http://localhost:3000/api/channels
+Authorization: Bearer JWT_HERE
+Content-Type: application/json
+{
+  "name": "Main Site",
+  "allowed_domain": "mysite.com"
+}
+Получить все свои каналы
+GET http://localhost:3000/api/channels
+Authorization: Bearer JWT_HERE
+Получить канал по id
+GET http://localhost:3000/api/channels/4
+Authorization: Bearer JWT_HERE
+Обновить канал
+PATCH http://localhost:3000/api/channels/4
+Authorization: Bearer JWT_HERE
+Content-Type: application/json
+{
+  "name": "Main Site Updated",
+  "allowed_domain": "app.mysite.com",
+  "is_active": true
+}
+Установить API key канала вручную
+PUT http://localhost:3000/api/channels/4/api-key
+Authorization: Bearer JWT_HERE
+Content-Type: application/json
+{
+  "api_key": "my-super-key-12345"
+}
+Сгенерировать новый API key канала
+POST http://localhost:3000/api/channels/4/rotate-key
+Authorization: Bearer JWT_HERE
+Удалить канал
+DELETE http://localhost:3000/api/channels/4
+Authorization: Bearer JWT_HERE
+Возобновить paused канал
+POST http://localhost:3000/api/channels/4/resume
+Authorization: Bearer JWT_HERE
+6. Appeals
+Внутреннее обращение через JWT
+POST http://localhost:3000/api/appeals
+Authorization: Bearer JWT_HERE
+Content-Type: application/json
+{
+  "cid": 4,
+  "text": "Не работает форма оплаты"
+}
+Внешнее обращение без JWT
+
+Тут нужен api_key канала в header.
+
+POST http://localhost:3000/api/appeals/external
+Content-Type: application/json
+x-channel-key: my-super-key-12345
+{
+  "cid": 4,
+  "text": "Ошибка при оформлении заказа"
+}
+История обращений
+GET http://localhost:3000/api/appeals/history
+Authorization: Bearer JWT_HERE
+
+С фильтрами:
+
+GET http://localhost:3000/api/appeals/history?channel_id=4&days=30
+Authorization: Bearer JWT_HERE
+Удалить одно обращение
+DELETE http://localhost:3000/api/appeals/55
+Authorization: Bearer JWT_HERE
+Удалить все обращения канала
+DELETE http://localhost:3000/api/appeals/channel/4/all
+Authorization: Bearer JWT_HERE
+7. Reports
+Каналы с вложенными обращениями
+GET http://localhost:3000/api/reports/channels
+Authorization: Bearer JWT_HERE
+Статистика по обращениям
+GET http://localhost:3000/api/reports/stats
+Authorization: Bearer JWT_HERE
+
+С фильтрами:
+
+GET http://localhost:3000/api/reports/stats?channel_id=4&days=30
+Authorization: Bearer JWT_HERE
+AI summary по обращениям
+GET http://localhost:3000/api/reports/summary
+Authorization: Bearer JWT_HERE
+
+С фильтрами:
+
+GET http://localhost:3000/api/reports/summary?channel_id=4&days=30&limit=50
+Authorization: Bearer JWT_HERE
+8. AI routes
+Общий AI response
+POST http://localhost:3000/api/context
+Authorization: Bearer JWT_HERE
+Content-Type: application/json
+{
+  "text": "Сделай краткую подсказку пользователю"
+}
+Перевод на русский
+POST http://localhost:3000/api/context/langrussian
+Authorization: Bearer JWT_HERE
+Content-Type: application/json
+{
+  "text": "Hello, I need help with checkout"
+}

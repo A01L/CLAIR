@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+  <meta charset="UTF-8">
+  <title>CLAIR — Аномалии</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="../assets/css/style.css">
+
+  <style>
+    .anomalies-page main {
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      padding: 20px;
+      gap: 20px;
+      width: 100%;
+      overflow-y: auto;
+    }
+
+    /* hide scrollbar but keep scroll functionality */
+    .anomalies-page main {
+      -ms-overflow-style: none;
+      /* IE and Edge */
+      scrollbar-width: none;
+      /* Firefox */
+    }
+
+    .anomalies-page main::-webkit-scrollbar {
+      display: none;
+    }
+
+    /* Chrome/Safari */
+
+    .filters {
+      width: 100%;
+      max-width: 1200px;
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    .filters button {
+      background: #e6e8ff;
+      color: #2e44ff;
+      border: none;
+      border-radius: 12px;
+      padding: 8px 16px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: 0.2s;
+    }
+
+    .filters button.active {
+      background: #2e44ff;
+      color: #fff;
+    }
+
+    .anomaly-grid {
+      width: 100%;
+      max-width: 1200px;
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(450px, 1fr));
+      gap: 15px;
+    }
+
+    .anomaly-card {
+      background: #fff;
+      border-radius: 12px;
+      padding: 15px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      border-left: 5px solid #808080;
+    }
+
+    /* Цвета рамок для разных типов */
+    .border-unknown {
+      border-left-color: #800080;
+    }
+
+    .border-fake {
+      border-left-color: #c71585;
+    }
+
+    .border-spam {
+      border-left-color: #8b4513;
+    }
+
+    .border-offtopic {
+      border-left-color: #808080;
+    }
+
+    .anomaly-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .anomaly-title {
+      font-weight: 700;
+      color: #222;
+      font-size: 16px;
+    }
+
+    .anomaly-severity {
+      font-size: 11px;
+      text-transform: uppercase;
+      font-weight: 700;
+      padding: 4px 10px;
+      border-radius: 20px;
+    }
+
+    .type-unknown {
+      background: #800080;
+      color: #fff;
+    }
+
+    .type-fake {
+      background: #c71585;
+      color: #fff;
+    }
+
+    .type-spam {
+      background: #8b4513;
+      color: #fff;
+    }
+
+    .type-offtopic {
+      background: #808080;
+      color: #fff;
+    }
+
+    .anomaly-info {
+      font-size: 14px;
+      color: #444;
+      line-height: 1.4;
+      background: #f9f9ff;
+      padding: 10px;
+      border-radius: 8px;
+    }
+
+    .meta-row {
+      display: flex;
+      justify-content: space-between;
+      font-size: 12px;
+      color: #777;
+    }
+
+    @media (max-width: 600px) {
+      .anomaly-grid {
+        grid-template-columns: 1fr;
+      }
+
+      /* match analysis card styles */
+      .anomaly-card {
+        background: #fff;
+        border-radius: 16px;
+        padding: 18px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+        border-left: 6px solid #ccc;
+        transition: transform 0.2s;
+        display: flex;
+        flex-direction: column;
+      }
+
+      .anomaly-card:hover {
+        transform: translateY(-2px);
+      }
+
+      .anomaly-info {
+        background: #f9f9ff;
+        padding: 10px;
+        border-radius: 8px;
+        color: #333;
+      }
+
+      #paginationControls button {
+        background: #2e44ff;
+        color: #fff;
+        border: none;
+        padding: 6px 10px;
+        border-radius: 8px;
+        cursor: pointer;
+      }
+
+      /* fixed bottom centered numeric pagination */
+      #paginationControls {
+        position: fixed;
+        bottom: 18px;
+        left: 50%;
+        transform: translateX(-50%);
+        display: flex;
+        gap: 8px;
+        align-items: center;
+        z-index: 1500;
+        background: rgba(255, 255, 255, 0.92);
+        padding: 8px 12px;
+        border-radius: 12px;
+        box-shadow: 0 8px 30px rgba(16, 24, 40, 0.08);
+      }
+
+      .select-style {
+        padding: 8px 12px;
+        border-radius: 10px;
+        border: 1px solid #e6e8ff;
+        background: #fff;
+        color: #0b2340;
+      }
+
+      .modal-calendar-overlay {
+        position: fixed;
+        left: 0;
+        top: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.45);
+        display: none;
+        align-items: center;
+        justify-content: center;
+        z-index: 2000;
+      }
+
+      .modal-calendar-overlay.active {
+        display: flex;
+      }
+
+      .modal-calendar {
+        background: #fff;
+        border-radius: 12px;
+        padding: 18px;
+        width: 360px;
+        box-shadow: 0 10px 30px rgba(16, 24, 40, 0.2);
+        border: 1px solid #eef2ff;
+      }
+
+      .modal-calendar .btn {
+        padding: 8px 12px;
+        border-radius: 8px;
+        border: none;
+        cursor: pointer;
+      }
+
+      .modal-calendar .btn.primary {
+        background: #2e44ff;
+        color: #fff;
+      }
+    }
+  </style>
+</head>
+
+<body class="anomalies-page">
+
+  <div class="container">
+    <div id="header"></div>
+
+    <div class="nav-buttons">
+      <button class="btn-back" onclick="goBack()">Назад</button>
+      <button class="btn-home" onclick="goHome()">Главная</button>
+    </div>
+
+    <main>
+      <h2 style="color: #2e44ff;">Обнаруженные аномалии</h2>
+
+      <div class="filters" id="filters">
+        <button class="active" data-filter="all">Все</button>
+        <button data-filter="unknown">Не опознано</button>
+        <button data-filter="fake">Ложь</button>
+        <button data-filter="spam">Спам</button>
+        <button data-filter="offtopic">Не в тему</button>
+      </div>
+
+      <div style="width:100%; max-width:1200px; margin-top:8px; display:flex; justify-content:center;">
+        <input id="anomalySearch" type="text" placeholder="Поиск по тексту или каналу..."
+          style="width:100%; max-width:600px; padding:10px; border-radius:12px; border:1px solid #e6e8ff;">
+      </div>
+
+      <div
+        style="width:100%; max-width:1200px; margin-top:12px; display:flex; justify-content:space-between; align-items:center;">
+        <div></div>
+        <div id="paginationControls"></div>
+      </div>
+
+      <div class="anomaly-grid" id="anomalyGrid">
+        <p style="text-align:center; grid-column: 1/-1;">Загрузка данных...</p>
+      </div>
+    </main>
+
+    <div style="height:120px;"></div>
+  </div>
+
+  <!-- date controls removed per request -->
+
+  <script src="../scripts/config.js"></script>
+  <script src="../scripts/common.js"></script>
+  <script>
+    const anomalyGrid = document.getElementById('anomalyGrid');
+    const filterButtons = document.querySelectorAll('.filters button');
+
+    // Словарь для перевода типов на русский
+    const typeLabels = {
+      unknown: "Неопознанный объект",
+      fake: "Ложная информация",
+      spam: "Спам / Реклама",
+      offtopic: "Вне контекста"
+    };
+
+    async function loadAnomalies() {
+      const selectedIds = JSON.parse(localStorage.getItem("selected_channels") || "[]");
+      const token = window.getAuthToken();
+
+      if (selectedIds.length === 0) {
+        anomalyGrid.innerHTML = '<p style="grid-column:1/-1;text-align:center;color:#999;padding-top:50px;">Сначала выберите каналы в настройках.</p>';
+        return;
+      }
+
+      try {
+        const response = await fetch(`${window.API_BASE}/api/reports/channels`, {
+          headers: { "Authorization": `Bearer ${window.getAuthToken()}` }
+        });
+
+        const data = await response.json();
+        const channels = data.channels.filter(ch => selectedIds.includes(String(ch.id)));
+
+        const anomalies = [];
+        channels.forEach(ch => {
+          (ch.appeals || []).forEach(app => {
+            // Если тип сообщения входит в список аномальных
+            if (["unknown", "fake", "spam", "offtopic"].includes(app.type)) {
+              anomalies.push({
+                ...app,
+                channelName: ch.name
+              });
+            }
+          });
+        });
+
+        renderAnomalies(anomalies);
+
+      } catch (err) {
+        anomalyGrid.innerHTML = '<p style="color:red; grid-column:1/-1; text-align:center;">Ошибка загрузки данных.</p>';
+      }
+    }
+
+    // pagination + date filters
+    let allAnomalies = [];
+    let filteredAnomalies = [];
+    let currentPage = 1;
+    const pageSize = 30;
+
+    function renderAnomalies(list) {
+      allAnomalies = list.slice();
+      allAnomalies.sort((a, b) => (new Date(b.created_at || 0)) - (new Date(a.created_at || 0)));
+      updateFiltersAndShow();
+    }
+
+    function updateFiltersAndShow() {
+      const activeBtn = document.querySelector('#filters button.active');
+      const active = activeBtn ? activeBtn.dataset.filter : 'all';
+      const query = (document.getElementById('anomalySearch') ? document.getElementById('anomalySearch').value.toLowerCase() : '');
+
+      filteredAnomalies = allAnomalies.filter(item => {
+        const matchesType = (active === 'all') || item.type === active;
+        const text = ((item.ai_comment || '') + ' ' + (item.channelName || '')).toLowerCase();
+        const matchesQuery = !query || text.includes(query);
+        return matchesType && matchesQuery;
+      });
+      currentPage = 1;
+      showPage(currentPage);
+    }
+
+    function showPage(page) {
+      anomalyGrid.innerHTML = '';
+      const total = filteredAnomalies.length;
+      const pages = Math.max(1, Math.ceil(total / pageSize));
+      if (page < 1) page = 1;
+      if (page > pages) page = pages;
+      currentPage = page;
+      const start = (page - 1) * pageSize;
+      const slice = filteredAnomalies.slice(start, start + pageSize);
+
+      if (slice.length === 0) {
+        anomalyGrid.innerHTML = '<p style="grid-column:1/-1;text-align:center;color:#999;padding-top:50px;">Нет аномалий по заданным фильтрам.</p>';
+      }
+
+      slice.forEach(item => {
+        const card = document.createElement('div');
+        card.className = `anomaly-card border-${item.type}`;
+        card.dataset.type = item.type;
+        const date = item.created_at ? new Date(item.created_at).toLocaleString() : new Date().toLocaleString();
+        card.innerHTML = `
+          <div class="anomaly-top">
+            <span class="anomaly-title">${typeLabels[item.type] || item.type}</span>
+            <span class="anomaly-severity type-${item.type}">Критично</span>
+          </div>
+          <div class="anomaly-info">
+            ${item.ai_comment || "Система зафиксировала подозрительную активность, но подробное описание отсутствует."}
+          </div>
+          <div class="meta-row">
+            <span><b>Источник:</b> ${item.channelName}</span>
+            <span>${date}</span>
+          </div>
+        `;
+        anomalyGrid.appendChild(card);
+      });
+      renderPagination(pages);
+    }
+
+    function renderPagination(totalPages) {
+      const container = document.getElementById('paginationControls');
+      if (!container) return;
+      container.innerHTML = '';
+      // center container styling
+      container.style.display = 'flex';
+      container.style.justifyContent = 'center';
+      container.style.gap = '6px';
+      container.style.position = 'fixed';
+      container.style.bottom = '70px';
+      container.style.left = '50%';
+      container.style.transform = 'translateX(-50%)';
+      container.style.zIndex = '1000';
+
+      const createPageBtn = (p) => {
+        const btn = document.createElement('button');
+        btn.textContent = p;
+        btn.style.padding = '6px 10px';
+        if (p === currentPage) { btn.style.background = '#fff'; btn.style.color = '#0b2340'; btn.style.border = '1px solid #e6e8ff'; }
+        btn.onclick = () => showPage(p);
+        btn.style.cursor = 'pointer';
+        return btn;
+      };
+
+      // first
+      container.appendChild(createPageBtn(1));
+      // left ellipsis
+      if (currentPage - 3 > 2) {
+        const ell = document.createElement('span'); ell.textContent = '...'; ell.style.padding = '6px 8px'; container.appendChild(ell);
+      }
+
+      const start = Math.max(2, currentPage - 2);
+      const end = Math.min(totalPages - 1, currentPage + 2);
+      for (let p = start; p <= end; p++) container.appendChild(createPageBtn(p));
+
+      if (currentPage + 3 < totalPages) {
+        const ell = document.createElement('span'); ell.textContent = '...'; ell.style.padding = '6px 8px'; container.appendChild(ell);
+      }
+
+      if (totalPages > 1) container.appendChild(createPageBtn(totalPages));
+    }
+
+    // Логика фильтрации
+    document.getElementById('filters').addEventListener('click', (e) => {
+      const btn = e.target.closest('button');
+      if (!btn) return;
+
+      filterButtons.forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      updateFiltersAndShow();
+    });
+
+    const anomalySearch = document.getElementById('anomalySearch');
+    if (anomalySearch) anomalySearch.addEventListener('input', updateFiltersAndShow);
+
+    // date controls removed
+
+    document.addEventListener('DOMContentLoaded', () => {
+      loadHeader();
+      loadFooter();
+      loadAnomalies();
+    });
+
+    // modal handlers removed
+
+    function goBack() { window.history.back(); }
+    function goHome() { window.location.href = "home.html"; }
+  </script>
+</body>
+
+</html>

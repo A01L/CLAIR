@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Clair</title>
+
+    <link rel="stylesheet" href="../assets/css/style.css">
+</head>
+
+<body class="home-page">
+
+    <div class="container">
+
+        <div id="header"></div>
+        <script src="../scripts/config.js"></script>
+        <script src="../scripts/common.js"></script>
+        <script>
+            document.addEventListener('DOMContentLoaded', () => {
+                loadHeader();
+                loadFooter();
+            });
+        </script>
+
+        <main>
+
+            <div class="grid">
+
+                <div class="card">
+                    <a href="channels.html">
+                        <img src="../assets/img/channels.png" alt="">
+                        <p>Каналы</p>
+                    </a>
+                </div>
+
+                <div class="card">
+                    <a href="statistics.html">
+                        <img src="../assets/img/statistics.png" alt="">
+                        <p>Статистика</p>
+                    </a>
+                </div>
+
+                <div class="card">
+                    <a href="analysis.html">
+                        <img src="../assets/img/analysis.png" alt="">
+                        <p>Анализ</p>
+                    </a>
+                </div>
+
+                <div class="card">
+                    <a href="cartography.html">
+                        <img src="../assets/img/cartography.png" alt="">
+                        <p>Картография</p>
+                    </a>
+                </div>
+
+                <div class="card">
+                    <a href="anomalies.html">
+                        <img src="../assets/img/anomalies.png" alt="">
+                        <p>Аномалии</p>
+                    </a>
+                </div>
+
+                <div class="card"><a href="settings.html">
+                        <img src="../assets/img/settings.png" alt="">
+                        <p>Настройки</p>
+                    </a>
+                </div>
+
+            </div>
+
+        </main>
+
+
+        <div id="footer"></div>
+
+        <script>
+            fetch("../main/partials/footer.html")
+                .then(r => r.text())
+                .then(html => {
+                    document.getElementById("footer").innerHTML = html;
+                });
+        </script>
+
+    </div>
+
+</body>
+
+</html>

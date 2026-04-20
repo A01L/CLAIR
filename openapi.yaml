@@ -1,0 +1,741 @@
+openapi: 3.0.3
+info:
+  title: Clair API
+  version: 1.0.1
+  description: |
+    API documentation for Clair backend based on the current project routes.
+    Includes Gemini key save/replace and delete.
+
+servers:
+  - url: http://localhost:3000
+
+tags:
+  - name: Health
+  - name: Auth
+  - name: Profile
+  - name: Gemini Key
+  - name: Channels
+  - name: Appeals
+  - name: Reports
+  - name: AI
+  - name: Rabbit Test
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+    channelKeyAuth:
+      type: apiKey
+      in: header
+      name: x-channel-key
+
+  schemas:
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+
+    OkResponse:
+      type: object
+      properties:
+        ok:
+          type: boolean
+          example: true
+
+    RegisterBody:
+      type: object
+      required: [username, password]
+      properties:
+        username:
+          type: string
+          example: admin
+        password:
+          type: string
+          example: admin123
+        full_name:
+          type: string
+          example: Admin User
+        email:
+          type: string
+          example: admin@example.com
+        tg_push:
+          type: boolean
+          example: false
+
+    LoginBody:
+      type: object
+      required: [username, password]
+      properties:
+        username:
+          type: string
+          example: admin
+        password:
+          type: string
+          example: admin123
+
+    LoginResponse:
+      type: object
+      properties:
+        access_token:
+          type: string
+          example: JWT_HERE
+        token_type:
+          type: string
+          example: Bearer
+
+    UpdateProfileBody:
+      type: object
+      properties:
+        full_name:
+          type: string
+          example: Ali Kabiev
+        email:
+          type: string
+          example: ali@mail.com
+
+    ChangePasswordBody:
+      type: object
+      required: [current_password, new_password]
+      properties:
+        current_password:
+          type: string
+          example: oldpass123
+        new_password:
+          type: string
+          example: newpass123
+
+    SaveGeminiKeyBody:
+      type: object
+      required: [gemini_api_key]
+      properties:
+        gemini_api_key:
+          type: string
+          example: AIzaSyExampleKey
+
+    CreateChannelBody:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+          example: Main Site
+        allowed_domain:
+          type: string
+          example: mysite.com
+
+    PatchChannelBody:
+      type: object
+      properties:
+        name:
+          type: string
+          example: Main Site Updated
+        allowed_domain:
+          type: string
+          example: app.mysite.com
+        is_active:
+          type: boolean
+          example: true
+
+    SetChannelApiKeyBody:
+      type: object
+      required: [api_key]
+      properties:
+        api_key:
+          type: string
+          example: clk_custom_super_key_123456
+
+    InternalAppealBody:
+      type: object
+      required: [cid, text]
+      properties:
+        cid:
+          type: integer
+          example: 12
+        text:
+          type: string
+          example: Не работает форма оплаты
+
+    ExternalAppealBody:
+      type: object
+      required: [cid, text]
+      properties:
+        cid:
+          type: integer
+          example: 12
+        text:
+          type: string
+          example: Ошибка при оформлении заказа
+
+    AiTextBody:
+      type: object
+      required: [text]
+      properties:
+        text:
+          type: string
+          example: Hello, I need help with checkout
+
+    RabbitTestBody:
+      type: object
+      properties:
+        cid:
+          type: integer
+          example: 12
+        foo:
+          type: string
+          example: bar
+
+paths:
+  /ping:
+    get:
+      tags: [Health]
+      summary: Health check
+      responses:
+        "200":
+          description: OK
+
+  /api/auth/register:
+    post:
+      tags: [Auth]
+      summary: Register user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegisterBody"
+      responses:
+        "201":
+          description: User created
+        "400":
+          description: Bad request
+        "409":
+          description: User already exists
+
+  /api/auth/login:
+    post:
+      tags: [Auth]
+      summary: Login user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginBody"
+      responses:
+        "200":
+          description: JWT issued
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LoginResponse"
+        "400":
+          description: Bad request
+        "401":
+          description: Invalid username or password
+
+  /api/auth/me:
+    get:
+      tags: [Auth]
+      summary: Get current user profile
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Current user profile
+        "401":
+          description: Unauthorized
+
+  /api/auth/login-history:
+    get:
+      tags: [Auth]
+      summary: Get login history
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            example: 20
+      responses:
+        "200":
+          description: Login history
+        "401":
+          description: Unauthorized
+
+  /api/me:
+    get:
+      tags: [Auth]
+      summary: Test protected route
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Current req.user
+        "401":
+          description: Unauthorized
+
+  /api/profile:
+    patch:
+      tags: [Profile]
+      summary: Update profile
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateProfileBody"
+      responses:
+        "200":
+          description: Profile updated
+        "401":
+          description: Unauthorized
+        "409":
+          description: Email already in use
+
+  /api/profile/password:
+    patch:
+      tags: [Profile]
+      summary: Change password
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ChangePasswordBody"
+      responses:
+        "200":
+          description: Password changed
+        "401":
+          description: Unauthorized / wrong current password
+        "400":
+          description: Bad request
+
+  /api/me/gemini-key:
+    patch:
+      tags: [Gemini Key]
+      summary: Save or replace Gemini API key
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SaveGeminiKeyBody"
+      responses:
+        "200":
+          description: Gemini key saved
+        "400":
+          description: Invalid Gemini key
+        "401":
+          description: Unauthorized
+    delete:
+      tags: [Gemini Key]
+      summary: Delete Gemini API key
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Gemini key deleted
+        "401":
+          description: Unauthorized
+        "400":
+          description: Delete failed
+
+  /api/channels:
+    get:
+      tags: [Channels]
+      summary: Get all channels of current user
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Channel list
+        "401":
+          description: Unauthorized
+    post:
+      tags: [Channels]
+      summary: Create channel
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateChannelBody"
+      responses:
+        "201":
+          description: Channel created
+        "401":
+          description: Unauthorized
+        "400":
+          description: Bad request
+
+  /api/channels/{cid}:
+    get:
+      tags: [Channels]
+      summary: Get channel by ID
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: cid
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Channel details
+        "401":
+          description: Unauthorized
+        "404":
+          description: Channel not found
+    patch:
+      tags: [Channels]
+      summary: Update channel
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: cid
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PatchChannelBody"
+      responses:
+        "200":
+          description: Channel updated
+        "401":
+          description: Unauthorized
+        "404":
+          description: Channel not found
+    delete:
+      tags: [Channels]
+      summary: Delete channel
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: cid
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Channel deleted
+        "401":
+          description: Unauthorized
+        "404":
+          description: Channel not found
+
+  /api/channels/{cid}/api-key:
+    put:
+      tags: [Channels]
+      summary: Set channel API key manually
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: cid
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SetChannelApiKeyBody"
+      responses:
+        "200":
+          description: Channel API key updated
+        "401":
+          description: Unauthorized
+        "404":
+          description: Channel not found
+        "409":
+          description: API key already used
+
+  /api/channels/{cid}/rotate-key:
+    post:
+      tags: [Channels]
+      summary: Rotate channel API key
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: cid
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Channel API key rotated
+        "401":
+          description: Unauthorized
+        "404":
+          description: Channel not found
+        "409":
+          description: API key already used
+
+  /api/channels/{channelId}/resume:
+    post:
+      tags: [Channels]
+      summary: Resume paused channel processing
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: channelId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Channel processing resumed
+        "401":
+          description: Unauthorized
+        "404":
+          description: Channel not found
+
+  /api/appeals:
+    post:
+      tags: [Appeals]
+      summary: Create internal appeal and push to channel queue
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/InternalAppealBody"
+      responses:
+        "202":
+          description: Appeal queued
+        "400":
+          description: Bad request
+        "401":
+          description: Unauthorized
+
+  /api/appeals/external:
+    post:
+      tags: [Appeals]
+      summary: External appeal ingest via channel key
+      security:
+        - channelKeyAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ExternalAppealBody"
+      responses:
+        "202":
+          description: Appeal queued
+        "401":
+          description: Channel auth missing
+        "403":
+          description: Invalid channel key / origin not allowed
+
+  /api/appeals/history:
+    get:
+      tags: [Appeals]
+      summary: Get appeals history
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: channel_id
+          in: query
+          required: false
+          schema:
+            type: integer
+            example: 12
+        - name: days
+          in: query
+          required: false
+          schema:
+            type: integer
+            example: 30
+      responses:
+        "200":
+          description: Appeals history
+        "401":
+          description: Unauthorized
+
+  /api/appeals/{appealId}:
+    delete:
+      tags: [Appeals]
+      summary: Delete one appeal
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: appealId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Appeal deleted
+        "401":
+          description: Unauthorized
+        "404":
+          description: Appeal not found
+
+  /api/appeals/channel/{channelId}/all:
+    delete:
+      tags: [Appeals]
+      summary: Delete all appeals of a channel
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: channelId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Appeals deleted
+        "401":
+          description: Unauthorized
+        "404":
+          description: Channel not found
+
+  /api/reports/channels:
+    get:
+      tags: [Reports]
+      summary: Get channels with nested appeals
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Channels report
+        "401":
+          description: Unauthorized
+
+  /api/reports/stats:
+    get:
+      tags: [Reports]
+      summary: Get appeals statistics
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: channel_id
+          in: query
+          required: false
+          schema:
+            type: integer
+            example: 12
+        - name: days
+          in: query
+          required: false
+          schema:
+            type: integer
+            example: 30
+      responses:
+        "200":
+          description: Appeals statistics
+        "401":
+          description: Unauthorized
+
+  /api/reports/summary:
+    get:
+      tags: [Reports]
+      summary: Get AI summary of appeals for a period
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: channel_id
+          in: query
+          required: false
+          schema:
+            type: integer
+            example: 12
+        - name: days
+          in: query
+          required: false
+          schema:
+            type: integer
+            example: 30
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            example: 50
+      responses:
+        "200":
+          description: AI summary
+        "401":
+          description: Unauthorized
+
+  /api/context:
+    post:
+      tags: [AI]
+      summary: Generic AI text response
+      description: |
+        Controller expects req.user.id. This route should be protected by JWT in your project setup.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AiTextBody"
+      responses:
+        "200":
+          description: AI response
+        "401":
+          description: Unauthorized
+
+  /api/context/langrussian:
+    post:
+      tags: [AI]
+      summary: Translate text to Russian
+      description: |
+        Controller expects req.user.id. This route should be protected by JWT in your project setup.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AiTextBody"
+      responses:
+        "200":
+          description: Translation response
+        "401":
+          description: Unauthorized
+
+  /api/rabbit/test:
+    post:
+      tags: [Rabbit Test]
+      summary: Push test message to RabbitMQ
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RabbitTestBody"
+      responses:
+        "200":
+          description: Test message queued

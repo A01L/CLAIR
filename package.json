@@ -1,0 +1,24 @@
+{
+  "name": "installing",
+  "version": "1.0.0",
+  "description": "",
+  "main": "express.js",
+  "type": "module",
+  "scripts": {
+    "dev": "node express.js",
+    "worker": "node worker.js",
+    "resume": "node resumePausedBacklog.js"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@google/generative-ai": "^0.24.1",
+    "amqplib": "^0.10.9",
+    "bcryptjs": "^3.0.3",
+    "env": "^0.0.2",
+    "gitignore": "^0.7.0",
+    "jsonwebtoken": "^9.0.3",
+    "nodemon": "^3.1.10",
+    "pg": "^8.17.2"
+  }
+}

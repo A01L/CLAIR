@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Настройки входа — CLAIR</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.1/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="../assets/css/auth.css">
+</head>
+
+<body class="auth-page">
+  <div id="header"></div>
+  <div class="container">
+    <main>
+      <div class="auth-wrapper">
+        <div class="top-logo"><img src="../assets/logo/logo.svg" alt="CLAIR"></div>
+        <div class="card-auth">
+          <h4><b>Настройки входа</b></h4>
+          <div class="subtext">Выберите уровень безопасности при входе</div>
+
+          <form id="entrySettingsForm">
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" id="requirePassword">
+              <label class="form-check-label" for="requirePassword">Требовать пароль</label>
+            </div>
+            <div class="form-check mt-2">
+              <input class="form-check-input" type="checkbox" id="requireNamePassword">
+              <label class="form-check-label" for="requireNamePassword">Требовать имя + пароль (последнее имя)</label>
+            </div>
+            <div class="form-check mt-2">
+              <input class="form-check-input" type="checkbox" id="logoutOnClose">
+              <label class="form-check-label" for="logoutOnClose">Выход при закрытии сайта/браузера</label>
+            </div>
+            <div class="form-check mt-2">
+              <input class="form-check-input" type="checkbox" id="disableMobile">
+              <label class="form-check-label" for="disableMobile">Запрет входа с мобильных устройств</label>
+            </div>
+
+            <label class="form-label-custom" for="emailCode">Код подтверждения</label>
+            <input id="emailCode" class="form-control" type="text" required>
+
+            <button class="btn btn-secondary mt-2" type="button" onclick="sendEmailCode()">Отправить код на
+              email</button>
+
+            <button class="btn btn-primary btn-primary-custom mt-3" type="submit">Сохранить настройки</button>
+            <button class="btn btn-outline btn-outline-custom mt-2" type="button"
+              onclick="window.location.href='settings.html'">Назад</button>
+          </form>
+
+          <div id="message" class="mt-3" role="alert"></div>
+
+          <pre id="out"></pre>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      loadHeader();
+      loadFooter();
+      // populate checkboxes from storage
+      document.getElementById('requirePassword').checked = localStorage.getItem('require_password_on_entry') === 'true';
+      document.getElementById('requireNamePassword').checked = localStorage.getItem('require_name_password') === 'true';
+      document.getElementById('logoutOnClose').checked = localStorage.getItem('logout_on_close') === 'true';
+      document.getElementById('disableMobile').checked = localStorage.getItem('disable_mobile') === 'true';
+
+      const out = document.getElementById("out");
+      const message = document.getElementById("message");
+
+      function sendEmailCode() {
+        // TODO: fetch to backend /api/auth/send-entry-settings-code
+        alert("Код отправлен на ваш email. Проверьте почту.");
+      }
+
+      document.getElementById("entrySettingsForm").addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const emailCode = document.getElementById("emailCode").value.trim();
+        if (!emailCode) {
+          message.textContent = "Введите код подтверждения!";
+          message.style.color = "red";
+          return;
+        }
+        const requirePassword = document.getElementById('requirePassword').checked;
+        const requireName = document.getElementById('requireNamePassword').checked;
+        const logoutClose = document.getElementById('logoutOnClose').checked;
+        const disableMobile = document.getElementById('disableMobile').checked;
+        localStorage.setItem('require_password_on_entry', requirePassword);
+        localStorage.setItem('require_name_password', requireName);
+        localStorage.setItem('logout_on_close', logoutClose);
+        localStorage.setItem('disable_mobile', disableMobile);
+        message.textContent = 'Настройки входа сохранены!';
+        message.style.color = "green";
+      });
+    });
+  </script>
+</body>
+
+</html>

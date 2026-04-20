@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Регистрация — CLAIR</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.1/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="../assets/css/auth.css">
+</head>
+
+<body class="auth-page">
+
+  <script src="../scripts/config.js"></script>
+  <script src="../scripts/common.js"></script>
+  <script>
+    // Если уже залогинен — улетаем на главную
+    if (sessionStorage.getItem("auth_token") || localStorage.getItem("auth_token")) {
+      window.location.href = "../main/home.html";
+    }
+  </script>
+  <div class="block-phone">
+    <div class="phone-content">
+      <h2>Внимание</h2>
+      <p>Пожалуйста, используйте устройство с большим экраном.</p>
+    </div>
+  </div>
+  <div class="container">
+    <main>
+      <div class="auth-wrapper">
+        <div class="top-logo">
+          <img src="../assets/logo/logo.svg" alt="CLAIR" />
+        </div>
+
+        <div class="card-auth">
+          <h4><b>Создать аккаунт</b></h4>
+          <div class="subtext">Добро пожаловать в CLAIR</div>
+
+          <form id="regForm">
+            <label class="form-label-custom" for="fullname">ФИО / Организация</label>
+            <input id="fullname" class="form-control" type="text" placeholder="Example" required />
+
+            <label class="form-label-custom" for="username">Логин (Username) *</label>
+            <input id="username" class="form-control" type="text" placeholder="Example" required />
+            <div id="usernameError" class="text-danger" style="font-size: 12px; display: none;"></div>
+
+            <label class="form-label-custom" for="email">Email *</label>
+            <input id="email" class="form-control" type="email" placeholder="mail@example.com" required />
+
+            <label class="form-label-custom" for="password">Пароль *</label>
+            <input id="password" class="form-control" type="password" placeholder="********" required minlength="6" />
+
+            <button id="regBtn" class="btn btn-primary btn-primary-custom mt-4" type="submit">
+              Зарегистрироваться
+            </button>
+
+            <button class="btn btn-outline btn-outline-custom mt-2" type="button"
+              onclick="window.location.href='../index.html'">
+              Уже есть аккаунт? Войти
+            </button>
+          </form>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    const regForm = document.getElementById("regForm");
+    const regBtn = document.getElementById("regBtn");
+
+    regForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+
+      const fullname = document.getElementById("fullname").value.trim();
+      const username = document.getElementById("username").value.trim();
+      const email = document.getElementById("email").value.trim();
+      const password = document.getElementById("password").value;
+
+      regBtn.disabled = true;
+      regBtn.textContent = "Создание...";
+
+      // Собираем данные под твой бэкенд
+      const payload = {
+        username: username,
+        password: password,
+        email: email,
+        full_name: fullname // Оставляем на случай, если бэк его пишет в БД
+      };
+
+      try {
+        const response = await fetch(window.API_BASE + "/api/auth/register", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+          // Твой бэк может возвращать токен сразу или просить залогиниться
+          const token = data.access_token || data.token;
+
+          if (token) {
+            sessionStorage.setItem("auth_token", token);
+            sessionStorage.setItem("token", token);
+          }
+
+          localStorage.setItem("userName", fullname || username);
+          localStorage.setItem("userEmail", email);
+
+          alert("Регистрация прошла успешно!");
+          window.location.href = "../index.html"; // Переход на страницу входа
+        } else {
+          alert("Ошибка: " + (data.message || "Данные заняты или неверны"));
+        }
+      } catch (err) {
+        console.error(err);
+        alert("Нет связи с сервером: " + window.API_BASE);
+      } finally {
+        regBtn.disabled = false;
+        regBtn.textContent = "Зарегистрироваться";
+      }
+    });
+  </script>
+</body>
+
+</html>

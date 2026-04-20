@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>История входов — CLAIR</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.1/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="../assets/css/auth.css">
+</head>
+
+<body class="auth-page">
+  <div id="header"></div>
+  <div class="container">
+    <main>
+      <div class="auth-wrapper">
+        <div class="top-logo"><img src="../assets/logo/logo.svg" alt="CLAIR"></div>
+        <div class="card-auth">
+          <h4><b>История входов</b></h4>
+          <div class="subtext">Последние авторизации в аккаунт</div>
+          <label class="form-label-custom" for="accessCode">Код подтверждения для просмотра</label>
+          <input id="accessCode" class="form-control" type="text" required>
+          <button class="btn btn-secondary mt-2" type="button" onclick="loadHistory()">Загрузить историю</button>
+          <ul id="loginHistory" class="list-group mt-3"></ul>
+          <button class="btn btn-outline btn-outline-custom mt-3" type="button"
+            onclick="window.location.href='settings.html'">Назад</button>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script src="../../scripts/config.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      loadHeader();
+      loadFooter();
+    });
+
+    function loadHistory() {
+      const accessCode = document.getElementById("accessCode").value.trim();
+      if (!accessCode) { alert("Введите код подтверждения!"); return; }
+      const list = document.getElementById("loginHistory");
+      (async () => {
+        try {
+          const r = await retryFetch(window.API_BASE + "/api/auth/login-history?code=" + accessCode);
+          const data = await r.json().catch(() => []);
+          list.innerHTML = data.map(item => `<li class="list-group-item">${item.date} — ${item.ip}</li>`).join("");
+        } catch (err) { list.innerHTML = "<li class='list-group-item'>Ошибка загрузки истории</li>"; }
+      })();
+    }
+  </script>
+</body>
+
+</html>

@@ -1,0 +1,304 @@
+<style>
+    .header {
+        background: transparent;
+        padding: 20px 0;
+        width: 100%;
+    }
+
+    .header__top {
+        display: flex;
+        justify-content: center;
+        margin-bottom: 15px;
+    }
+
+    .header__top img {
+        height: 24px;
+        object-fit: contain;
+    }
+
+    .header__middle {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .header__ai {
+        width: 90px;
+        cursor: pointer;
+    }
+
+    .header__search-input {
+        width: 600px;
+        padding: 10px;
+        border-radius: 25px;
+        border: 2px solid #cdd3ff;
+        outline: none;
+        font-size: 14px;
+        background: white;
+    }
+
+    .header__search-input:focus {
+        border-color: #4a61ff;
+    }
+
+    .header__profile {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        cursor: pointer;
+    }
+
+    .header__profile-img {
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        object-fit: cover;
+        border: 2px solid #4a61ff;
+    }
+
+    .header__profile-btn {
+        width: 36px;
+        height: 36px;
+        background: #2e44ff;
+        border-radius: 50%;
+        border: none;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 18px;
+        transition: 0.2s;
+    }
+
+    .header__profile-btn svg {
+        display: block;
+    }
+
+    /* Profile Modal */
+    .profile-modal-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.3);
+        backdrop-filter: blur(3px);
+        display: none;
+        align-items: center;
+        justify-content: center;
+        z-index: 1000;
+    }
+
+    .profile-modal-overlay.active {
+        display: flex;
+    }
+
+    .profile-modal {
+        background: #fff;
+        border-radius: 16px;
+        padding: 24px;
+        width: 400px;
+        max-width: 90%;
+        box-shadow: 0 4px 24px rgba(0, 0, 0, 0.15);
+    }
+
+    .profile-modal h2 {
+        color: #2e44ff;
+        margin-bottom: 16px;
+        font-size: 18px;
+    }
+
+    .profile-info {
+        display: flex;
+        gap: 12px;
+        margin-bottom: 20px;
+        align-items: center;
+    }
+
+    .profile-info img {
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        object-fit: cover;
+        border: 2px solid #e0e0e0;
+    }
+
+    .profile-img-placeholder {
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        background: #e0e0e0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #666;
+        font-weight: bold;
+        font-size: 14px;
+    }
+
+    .profile-info-text h3 {
+        color: #2e44ff;
+        font-size: 14px;
+        margin: 0 0 4px 0;
+    }
+
+    .profile-info-text p {
+        color: #999;
+        font-size: 12px;
+        margin: 0;
+    }
+
+    .profile-modal-actions {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .profile-modal-btn {
+        padding: 10px;
+        border-radius: 8px;
+        border: none;
+        font-weight: 600;
+        cursor: pointer;
+        transition: 0.2s;
+        font-size: 13px;
+    }
+
+    .profile-modal-btn.primary {
+        background: #2e44ff;
+        color: white;
+    }
+
+    .profile-modal-btn.primary:hover {
+        background: #1a2ecc;
+    }
+
+    .profile-modal-btn.secondary {
+        background: #e6e8ff;
+        color: #2e44ff;
+    }
+
+    .profile-modal-btn.secondary:hover {
+        background: #d6d8ff;
+    }
+
+    .profile-modal-btn.danger {
+        background: #ff3b3b;
+        color: white;
+    }
+
+    .profile-modal-btn.danger:hover {
+        background: #e00000;
+    }
+
+    .form-group {
+        margin-bottom: 16px;
+    }
+
+    .form-group label {
+        display: block;
+        color: #2e44ff;
+        font-weight: 600;
+        font-size: 13px;
+        margin-bottom: 4px;
+    }
+
+    .form-group input {
+        width: 100%;
+        padding: 8px;
+        border-radius: 8px;
+        border: 1px solid #ccc;
+        font-size: 14px;
+    }
+
+    .form-actions {
+        display: flex;
+        gap: 12px;
+        margin-top: 20px;
+        justify-content: center;
+    }
+</style>
+<header class="header">
+
+    <div class="header__top">
+        <img src="" alt="logo" class="header__logo">
+    </div>
+
+    <div class="header__middle">
+
+        <img class="header__ai" src="" alt="AI" onclick="goToSettings()">
+
+        <input class="header__search-input" type="text" placeholder="Поиск по личной базе...">
+
+        <button class="header__profile-btn" onclick="openProfileModal()" title="Профиль">
+            <img class="header__profile-img" src="" alt="Profile">
+        </button>
+
+    </div>
+
+    <!-- Profile Modal -->
+    <div id="profileModal" class="profile-modal-overlay">
+        <div class="profile-modal">
+            <h2>Профиль</h2>
+
+            <div class="profile-info" style="flex-direction:column;align-items:center;gap:12px;">
+                <div id="profileModalImg" class="profile-img-placeholder" onclick="openPhotoEdit()"
+                    title="Нажмите, чтобы выбрать фото"
+                    style="width:140px;height:140px;border-radius:50%;overflow:hidden;display:flex;align-items:center;justify-content:center;cursor:pointer;background-size:cover;background-position:center;">
+                    IMG</div>
+                <div class="profile-info-text" style="text-align:center;width:100%;">
+                    <div style="display:flex; gap:8px; align-items:center; justify-content:center;">
+                        <h3 id="profileModalName">Сайлаухан Тамерлан</h3>
+                        <button class="profile-modal-btn secondary" id="editNameInlineBtn"
+                            onclick="toggleNameEdit()">Изменить</button>
+                    </div>
+                    <div id="profileNameEdit" style="display:none; margin-top:8px;">
+                        <input id="profileNameInput" type="text"
+                            style="width:100%; padding:8px; border-radius:8px; border:1px solid #ddd;" />
+                        <div style="display:flex; gap:8px; margin-top:8px; justify-content:center;">
+                            <button class="profile-modal-btn primary" onclick="saveInlineName()">Сохранить</button>
+                            <button class="profile-modal-btn secondary" onclick="cancelInlineName()">Отмена</button>
+                        </div>
+                    </div>
+                    <p id="profileModalEmail">tamerlan@example.com</p>
+                </div>
+            </div>
+
+            <div class="profile-modal-actions">
+                <button class="profile-modal-btn primary" onclick="goToSettings()">Настройки</button>
+                <button class="profile-modal-btn danger" onclick="confirmLogout()">Выйти</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- inline name edit handled inside profile modal -->
+
+    <!-- Edit Photo Modal with crop controls -->
+    <div id="editPhotoModal" class="profile-modal-overlay">
+        <div class="profile-modal">
+            <h2>Изменить фото</h2>
+            <div id="photoPreview"
+                style="width:220px; height:220px; margin:auto; border-radius:50%; background:#f0f0f0; background-size:cover; background-position:center; overflow:hidden;">
+                IMG</div>
+            <div class="form-actions">
+                <button class="profile-modal-btn secondary" onclick="closeEditPhotoModal()">Отмена</button>
+                <button class="profile-modal-btn primary" onclick="saveCroppedPhoto()">Сохранить</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Logout confirmation modal -->
+    <div id="logoutConfirmModal" class="profile-modal-overlay">
+        <div class="profile-modal">
+            <h2>Подтверждение выхода</h2>
+            <p>Вы действительно хотите выйти из аккаунта?</p>
+            <div class="form-actions">
+                <button class="profile-modal-btn secondary" onclick="closeLogoutConfirmModal()">Отмена</button>
+                <button class="profile-modal-btn danger" onclick="logout()">Выйти</button>
+            </div>
+        </div>
+    </div>
+
+</header>

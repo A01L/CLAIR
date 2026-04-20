@@ -1,0 +1,818 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+  <meta charset="UTF-8">
+  <title>CLAIR — Каналы</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="../assets/css/style.css">
+
+  <style>
+    .channels-page main {
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      padding: 20px;
+      gap: 20px;
+      width: 100%;
+      overflow-y: auto;
+    }
+
+    /* hide scrollbar but keep scroll functionality */
+    .channels-page main {
+      -ms-overflow-style: none;
+      /* IE and Edge */
+      scrollbar-width: none;
+      /* Firefox */
+    }
+
+    .channels-page main::-webkit-scrollbar {
+      display: none;
+    }
+
+    /* Chrome/Safari */
+
+    .page-title {
+      font-size: 24px;
+      font-weight: 700;
+      color: #2e44ff;
+    }
+
+    .page-description {
+      font-size: 14px;
+      color: #666;
+      text-align: center;
+      max-width: 700px;
+      margin-bottom: 10px;
+    }
+
+    /* Сетка каналов */
+    .channels-grid {
+      width: 100%;
+      max-width: 1000px;
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 20px;
+    }
+
+    .channel-card {
+      background: #fff;
+      border-radius: 20px;
+      padding: 20px;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+      transition: 0.3s;
+      cursor: pointer;
+      position: relative;
+      border: 3px solid transparent;
+    }
+
+    /* three-dot menu */
+    .channel-menu-btn {
+      position: absolute;
+      top: 10px;
+      right: 12px;
+      width: 28px;
+      height: 28px;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: transparent;
+      border: none;
+      cursor: pointer;
+    }
+
+    .channel-menu {
+      position: absolute;
+      top: 44px;
+      right: 12px;
+      background: #fff;
+      box-shadow: 0 6px 18px rgba(16, 24, 40, 0.12);
+      border-radius: 10px;
+      padding: 8px;
+      display: none;
+      z-index: 1200;
+      min-width: 160px;
+    }
+
+    .channel-menu.active {
+      display: block;
+    }
+
+    .channel-menu button {
+      display: block;
+      width: 100%;
+      text-align: left;
+      padding: 8px 10px;
+      border: none;
+      background: transparent;
+      cursor: pointer;
+      border-radius: 6px;
+    }
+
+    .channel-menu button:hover {
+      background: #f0f4ff;
+    }
+
+    .color-palette {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      padding: 6px;
+    }
+
+    .color-swatch {
+      width: 26px;
+      height: 26px;
+      border-radius: 6px;
+      cursor: pointer;
+      border: 2px solid #fff;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+    }
+
+    .color-swatch:hover {
+      transform: scale(1.06);
+    }
+
+    /* Стиль выбранной карточки */
+    .channel-card.selected {
+      border-color: transparent;
+      background: #fff;
+      color: inherit;
+    }
+
+    .channel-card.selected::before,
+    .channel-card.selected::after {
+      content: '';
+      position: absolute;
+      width: 18px;
+      height: 18px;
+      background: #000;
+      border-radius: 0 0 6px 0;
+      z-index: 5;
+    }
+
+    .channel-card.selected::before {
+      top: 0;
+      left: 0;
+      border-radius: 0 0 0 6px;
+    }
+
+    .channel-card.selected::after {
+      top: 0;
+      right: 0;
+      border-radius: 0 0 6px 0;
+    }
+
+    .channel-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 8px 25px rgba(46, 68, 255, 0.15);
+    }
+
+    .channel-icon {
+      width: 70px;
+      height: 70px;
+      background: #e6e8ff;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 30px;
+    }
+
+    .channel-card.selected .channel-icon {
+      background: #2340d6;
+      color: #fff;
+    }
+
+    .channel-card.selected .channel-title {
+      color: #fff;
+    }
+
+    .channel-title {
+      font-weight: 700;
+      color: #2e44ff;
+      font-size: 18px;
+    }
+
+    /* Блок деталей снизу */
+    .details-box {
+      width: 100%;
+      max-width: 1000px;
+      background: #fff;
+      border-radius: 20px;
+      padding: 25px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+      margin-top: 20px;
+    }
+
+    .section-title {
+      font-size: 16px;
+      font-weight: 700;
+      color: #2e44ff;
+      margin-bottom: 15px;
+      border-bottom: 1px solid #eee;
+      padding-bottom: 10px;
+    }
+
+    .list-item {
+      padding: 12px;
+      border-bottom: 1px solid #f5f5f5;
+      font-size: 14px;
+      display: flex;
+      align-items: center;
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 10px;
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      margin-right: 12px;
+      min-width: 70px;
+      text-align: center;
+    }
+
+    .badge-review {
+      background: #e0fae9;
+      color: #22c55e;
+    }
+
+    .badge-complaint {
+      background: #fee2e2;
+      color: #ef4444;
+    }
+
+    /* Modal */
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.4);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      backdrop-filter: blur(4px);
+    }
+
+    .modal-overlay.active {
+      display: flex;
+    }
+
+    .modal-window {
+      background: #fff;
+      border-radius: 20px;
+      padding: 30px;
+      width: 400px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+    }
+
+    .modal-window h3 {
+      color: #2e44ff;
+      margin-bottom: 15px;
+    }
+
+    .modal-window input {
+      width: 100%;
+      padding: 12px;
+      margin: 10px 0;
+      border-radius: 10px;
+      border: 1px solid #ddd;
+      outline: none;
+    }
+
+    .modal-window input:focus {
+      border-color: #2e44ff;
+    }
+
+    .btn-main {
+      background: #2e44ff;
+      color: #fff;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 20px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: 0.2s;
+    }
+
+    .btn-main:hover {
+      background: #1a2ecc;
+    }
+
+    /* hide scrollbar but allow wheel scrolling */
+    .channels-grid {
+      -ms-overflow-style: none;
+      /* IE and Edge */
+      scrollbar-width: none;
+      /* Firefox */
+    }
+
+    .channels-grid::-webkit-scrollbar {
+      display: none;
+    }
+  </style>
+</head>
+
+<body class="channels-page">
+
+  <div class="container">
+    <div id="header"></div>
+
+    <div class="nav-buttons">
+      <button class="btn-back" onclick="goBack()">Назад</button>
+      <button class="btn-home" onclick="goHome()">Главная</button>
+    </div>
+
+    <main>
+      <h1 class="page-title">Выбор каналов</h1>
+      <p class="page-description">Отметьте нужные источники. Система CLAIR будет анализировать данные только из
+        выбранных вами каналов.</p>
+
+      <button class="btn-main" onclick="openModal()" style="margin-bottom: 20px;">+ Подключить новый источник</button>
+
+      <div class="channels-grid" id="channelsGrid">
+        <p style="grid-column: 1/-1; text-align: center;">Загрузка списка каналов...</p>
+      </div>
+
+      <div id="channelsDetails" class="details-box" style="display:none;">
+        <h3 class="section-title">Оперативная сводка</h3>
+        <p style="font-size: 14px;"><b>Выбранные источники:</b> <span id="selectedNames"
+            style="color: #2e44ff;">...</span></p>
+
+        <div style="margin-top: 20px;">
+          <h4 style="font-size: 14px; color: #666; margin-bottom: 10px;">Последние события из каналов:</h4>
+          <div id="combinedFeed"></div>
+        </div>
+      </div>
+    </main>
+
+    <div id="footer"></div>
+
+    <div id="addModal" class="modal-overlay">
+      <div class="modal-window">
+        <h3>Новый канал</h3>
+        <p style="font-size: 13px; color: #666;">Введите название или ссылку на источник данных.</p>
+        <input type="text" id="newChannelName" placeholder="Название (например, Support Chat)">
+        <div style="display:flex; gap:10px; margin-top:15px;">
+          <button class="btn-main" style="flex:1" onclick="submitChannel()">Добавить</button>
+          <button class="btn-main" style="flex:1; background:#eee; color:#333;" onclick="closeModal()">Отмена</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="renameModal" class="modal-overlay">
+      <div class="modal-window" style="width:420px;">
+        <h3>Переименовать канал</h3>
+        <input type="text" id="renameChannelName" placeholder="Новое имя канала">
+        <div style="display:flex; gap:10px; margin-top:15px;">
+          <button class="btn-main" style="flex:1" id="saveRenameBtn">Сохранить</button>
+          <button class="btn-main" style="flex:1; background:#eee; color:#333;" id="cancelRenameBtn">Отмена</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="colorModal" class="modal-overlay">
+      <div class="modal-window" style="width:420px;">
+        <h3>Выберите цвет</h3>
+        <div class="color-palette" id="colorPaletteModal"></div>
+        <div style="display:flex; gap:10px; margin-top:15px;">
+          <button class="btn-main" style="flex:1" id="saveColorBtn">Сохранить</button>
+          <button class="btn-main" style="flex:1; background:#eee; color:#333;" id="cancelColorBtn">Отмена</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="deleteConfirmModal" class="modal-overlay">
+    <div class="modal-window" style="width:360px;">
+      <h3>Удалить канал?</h3>
+      <p style="color:#444;">Вы уверены, что хотите удалить этот канал? Действие необратимо.</p>
+      <div style="display:flex; gap:10px; justify-content:flex-end; margin-top:12px;">
+        <button class="btn-main" id="cancelDeleteBtn" style="background:#eee;color:#333;">Отмена</button>
+        <button class="btn-main" id="confirmDeleteBtn" style="background:#ff4444;">Удалить</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="../scripts/config.js"></script>
+  <script src="../scripts/common.js"></script>
+  <script>
+    // БЕЗОПАСНЫЕ ПОЛИФИЛЛЫ: Предотвращают падение скрипта, если функции из common.js недоступны
+    if (typeof window.getAuthToken !== 'function') {
+      window.getAuthToken = () => localStorage.getItem('token') || '';
+    }
+    if (typeof window.serverPing !== 'function') {
+      window.serverPing = async () => true;
+    }
+    if (typeof window.API_BASE === 'undefined') {
+      window.API_BASE = '';
+    }
+
+    let channelData = [];
+    // Загружаем сохраненные ID из localStorage
+    let selectedIds = new Set(JSON.parse(localStorage.getItem("selected_channels") || "[]"));
+
+    async function loadChannels() {
+      const grid = document.getElementById('channelsGrid');
+
+      try {
+        const token = window.getAuthToken();
+        // безопасно вызываем serverPing
+        let serverUp = true;
+        try {
+          serverUp = await window.serverPing();
+        } catch (e) {
+          serverUp = false;
+        }
+
+        // если сервер недоступен — показываем локальные каналы (если есть)
+        if (!serverUp) {
+          const local = JSON.parse(localStorage.getItem('local_channels') || '[]');
+          if (!local || local.length === 0) {
+            grid.innerHTML = '<p style="color:#999; grid-column: 1/-1; text-align:center;">Сервер недоступен — нет локальных каналов.</p>';
+            return;
+          }
+          channelData = local;
+          renderGrid(); // Заменено на вызов рендера для сохранения стилей и меню
+          updateDetails();
+          return;
+        }
+
+        const response = await fetch(`${window.API_BASE}/api/reports/channels`, {
+          headers: { "Authorization": `Bearer ${token}` }
+        });
+
+        if (!response.ok) {
+          // debug: log response body
+          const txt = await response.text().catch(() => null);
+          console.warn('GET /api/reports/channels failed', response.status, txt);
+          if (response.status === 401) {
+            grid.innerHTML = '<p style="color:red; grid-column: 1/-1; text-align:center;">Требуется авторизация. Перенаправление...</p>';
+            setTimeout(() => window.location.href = 'index.html', 800);
+            return;
+          }
+          throw new Error('Ошибка сервера: ' + response.status);
+        }
+
+        const data = await response.json();
+
+        // ЗАЩИТА: Если data - это массив, берем его. Иначе берем data.channels
+        channelData = Array.isArray(data) ? data : (data?.channels || []);
+
+        renderGrid();
+        updateDetails();
+      } catch (err) {
+        console.error("Ошибка в loadChannels:", err);
+        if (grid) {
+          grid.innerHTML = '<p style="color:red; grid-column: 1/-1; text-align:center;">Ошибка загрузки списка. Проверьте консоль.</p>';
+        }
+      }
+    }
+
+    function renderGrid() {
+      const grid = document.getElementById('channelsGrid');
+      if (!channelData || channelData.length === 0) {
+        grid.innerHTML = '<p style="grid-column: 1/-1; text-align:center;">У вас пока нет доступных каналов.</p>';
+        return;
+      }
+
+      grid.innerHTML = channelData.map(ch => {
+        // Проверяем, выбран ли канал (сравниваем как строки)
+        const isSelected = selectedIds.has(String(ch.id));
+        return `
+            <div class="channel-card ${isSelected ? 'selected' : ''}" id="card-${ch.id}" onclick="toggleChannel('${ch.id}')" style="border-color:${ch.color || 'transparent'}">
+              <button class="channel-menu-btn" onclick="openChannelMenu(event, '${ch.id}')">⋯</button>
+              <div class="channel-menu" id="menu-${ch.id}">
+                <button onclick="startRenameChannel(event, '${ch.id}')">Изменить имя</button>
+                <button onclick="openColorPicker(event, '${ch.id}')">Выбрать цвет</button>
+                <button onclick="deleteChannel(event, '${ch.id}')">Удалить</button>
+              </div>
+            <div class="channel-icon">📱</div>
+              <div class="channel-title">${ch.name}</div>
+              <div style="font-size: 11px; color: #aaa;">ID: ${ch.id}</div>
+            </div>
+          `;
+      }).join('');
+    }
+
+    function toggleChannel(id) {
+      const sId = String(id);
+      const card = document.getElementById(`card-${id}`);
+
+      if (selectedIds.has(sId)) {
+        selectedIds.delete(sId);
+        if (card) card.classList.remove('selected');
+      } else {
+        selectedIds.add(sId);
+        if (card) card.classList.add('selected');
+      }
+
+      // Сохраняем выбор
+      localStorage.setItem("selected_channels", JSON.stringify(Array.from(selectedIds)));
+      updateDetails();
+    }
+
+    // menu logic
+    function openChannelMenu(e, id) {
+      e.stopPropagation();
+      // close other menus
+      document.querySelectorAll('.channel-menu').forEach(m => m.classList.remove('active'));
+      const menu = document.getElementById(`menu-${id}`);
+      if (menu) menu.classList.add('active');
+      // click outside closes
+      const onDoc = (ev) => {
+        if (!menu.contains(ev.target)) {
+          menu.classList.remove('active');
+          document.removeEventListener('click', onDoc);
+        }
+      };
+      // Используем setTimeout, чтобы текущий клик не вызвал мгновенное закрытие
+      setTimeout(() => document.addEventListener('click', onDoc), 0);
+    }
+
+    let manageChannelId = null;
+    function closeAllMenus() {
+      document.querySelectorAll('.channel-menu').forEach(m => m.classList.remove('active'));
+    }
+
+    function startRenameChannel(e, id) {
+      e.stopPropagation();
+      closeAllMenus();
+      manageChannelId = id;
+      const ch = channelData.find(c => String(c.id) === String(id)) || {};
+      document.getElementById('renameChannelName').value = ch.name || '';
+      document.getElementById('renameModal').classList.add('active');
+    }
+
+    function openColorPicker(e, id) {
+      e.stopPropagation();
+      closeAllMenus();
+      manageChannelId = id;
+      // render palette into modal and open
+      renderPaletteModal();
+      document.getElementById('colorModal').classList.add('active');
+    }
+
+    function deleteChannel(e, id) {
+      e.stopPropagation();
+      closeAllMenus();
+      manageChannelId = id;
+      // open styled confirmation modal
+      const modal = document.getElementById('deleteConfirmModal');
+      if (modal) modal.classList.add('active');
+    }
+
+    // palette colors (variations similar to provided image)
+    const paletteColors = [
+      '#0ea5a4', '#06b6d4', '#3b82f6', '#6366f1', '#7c3aed', '#ec4899', '#ef4444', '#f97316', '#f59e0b', '#84cc16',
+      '#10b981', '#06b6d4', '#3b82f6', '#60a5fa', '#818cf8', '#a78bfa', '#fb7185', '#f43f5e', '#ef4444', '#f97316'
+    ];
+
+    function renderPaletteModal() {
+      const container = document.getElementById('colorPaletteModal');
+      if (!container) return;
+      container.innerHTML = paletteColors.map(c => `<div class="color-swatch" style="background:${c}" data-color="${c}" onclick="selectColorPreview('${c}')"></div>`).join('');
+    }
+
+    let selectedColorPreview = null;
+    function selectColorPreview(color) {
+      selectedColorPreview = color;
+      // preview border on card
+      const card = document.getElementById(`card-${manageChannelId}`);
+      if (card) card.style.borderColor = color;
+    }
+
+    document.getElementById('saveRenameBtn').addEventListener('click', async () => {
+      const name = document.getElementById('renameChannelName').value.trim();
+      if (!manageChannelId) return;
+      const ch = channelData.find(c => String(c.id) === String(manageChannelId));
+      if (ch) {
+        ch.name = name || ch.name;
+        // attempt server update if available
+        try {
+          const token = window.getAuthToken();
+          let serverUp = false;
+          try { serverUp = await window.serverPing(); } catch (e) { }
+
+          if (serverUp && token) {
+            await fetch(`${window.API_BASE}/api/channels/${manageChannelId}`, {
+              method: 'PATCH',
+              headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+              body: JSON.stringify({ name: ch.name, color: ch.color })
+            });
+          }
+        } catch (err) { console.warn('update channel on server failed', err); }
+      }
+      saveChannelsToLocal();
+      document.getElementById('renameModal').classList.remove('active');
+      manageChannelId = null;
+      renderGrid();
+      updateDetails();
+    });
+
+    document.getElementById('cancelRenameBtn').addEventListener('click', () => {
+      document.getElementById('renameModal').classList.remove('active');
+      manageChannelId = null;
+    });
+
+    // color modal actions
+    document.getElementById('saveColorBtn').addEventListener('click', async () => {
+      if (!manageChannelId) return;
+      const color = selectedColorPreview;
+      if (color) {
+        const ch = channelData.find(c => String(c.id) === String(manageChannelId));
+        if (ch) ch.color = color;
+        // attempt server update
+        try {
+          const token = window.getAuthToken();
+          let serverUp = false;
+          try { serverUp = await window.serverPing(); } catch (e) { }
+
+          if (serverUp && token) {
+            await fetch(`${window.API_BASE}/api/channels/${manageChannelId}`, {
+              method: 'PATCH', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, body: JSON.stringify({ color })
+            });
+          }
+        } catch (err) { console.warn('update color failed', err); }
+        saveChannelsToLocal();
+        renderGrid();
+        updateDetails();
+      }
+      document.getElementById('colorModal').classList.remove('active');
+      manageChannelId = null;
+      selectedColorPreview = null;
+    });
+
+    document.getElementById('cancelColorBtn').addEventListener('click', () => {
+      // revert preview if needed by re-rendering
+      renderGrid();
+      document.getElementById('colorModal').classList.remove('active');
+      manageChannelId = null;
+      selectedColorPreview = null;
+    });
+
+    function saveChannelsToLocal() {
+      try { localStorage.setItem('local_channels', JSON.stringify(channelData)); } catch (e) { console.warn(e); }
+    }
+
+    // init palette on load
+    document.addEventListener('DOMContentLoaded', () => {
+      renderPaletteModal();
+    });
+
+    // delete confirm modal handlers
+    document.addEventListener('DOMContentLoaded', () => {
+      const cancel = document.getElementById('cancelDeleteBtn');
+      const confirm = document.getElementById('confirmDeleteBtn');
+
+      if (cancel) cancel.addEventListener('click', () => {
+        const modal = document.getElementById('deleteConfirmModal'); if (modal) modal.classList.remove('active');
+        manageChannelId = null;
+      });
+
+      if (confirm) confirm.addEventListener('click', async () => {
+        try {
+          const token = window.getAuthToken();
+          let serverUp = false;
+          try { serverUp = await window.serverPing(); } catch (e) { }
+
+          if (serverUp && token) {
+            await fetch(`${window.API_BASE}/api/channels/${manageChannelId}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` } });
+          }
+        } catch (err) { console.warn('server delete failed', err); }
+
+        channelData = channelData.filter(c => String(c.id) !== String(manageChannelId));
+        saveChannelsToLocal();
+        const modal = document.getElementById('deleteConfirmModal'); if (modal) modal.classList.remove('active');
+        manageChannelId = null;
+        renderGrid();
+        updateDetails();
+      });
+    });
+
+    function updateDetails() {
+      const details = document.getElementById('channelsDetails');
+      const namesSpan = document.getElementById('selectedNames');
+      const feed = document.getElementById('combinedFeed');
+
+      if (selectedIds.size === 0) {
+        details.style.display = 'none';
+        feed.innerHTML = '';
+        return;
+      }
+
+      details.style.display = 'block';
+      const selectedChannels = channelData.filter(ch => selectedIds.has(String(ch.id)));
+      namesSpan.textContent = selectedChannels.map(ch => ch.name).join(', ');
+
+      let html = '';
+      selectedChannels.forEach(ch => {
+        (ch.appeals || []).slice(0, 2).forEach(app => {
+          const isBad = ["criticism", "bug", "spam", "fake"].includes(app.type);
+          html += `
+            <div class="list-item">
+              <span class="badge ${isBad ? 'badge-complaint' : 'badge-review'}">${isBad ? 'Внимание' : 'Ок'}</span>
+              <span><b>${ch.name}:</b> ${app.ai_comment || 'Обработка данных...'}</span>
+            </div>
+          `;
+        });
+      });
+
+      feed.innerHTML = html || '<p style="font-size:13px; color:#999; padding: 10px;">В выбранных источниках пока пусто.</p>';
+    }
+
+    // Логика модалки
+    function openModal() { document.getElementById('addModal').classList.add('active'); }
+    function closeModal() { document.getElementById('addModal').classList.remove('active'); }
+
+    async function submitChannel() {
+      const nameEl = document.getElementById('newChannelName');
+      const name = nameEl ? nameEl.value.trim() : '';
+      if (!name) {
+        alert('Введите название источника');
+        return;
+      }
+
+      // prevent duplicate names locally
+      const existing = (channelData || []).concat(JSON.parse(localStorage.getItem('local_channels') || '[]'));
+      if (existing.some(c => (c.name || '').trim().toLowerCase() === name.toLowerCase())) {
+        alert('Канал с таким именем уже существует');
+        return;
+      }
+
+      const token = window.getAuthToken();
+      if (!token) {
+        alert('Требуется авторизация. Пожалуйста, войдите в систему.');
+        return;
+      }
+
+      try {
+        let serverUp = false;
+        try { serverUp = await window.serverPing(); } catch (e) { }
+
+        if (!serverUp) {
+          // сохраняем локально
+          const local = JSON.parse(localStorage.getItem('local_channels') || '[]');
+          const nid = Date.now();
+          local.push({ id: nid, name });
+          localStorage.setItem('local_channels', JSON.stringify(local));
+          closeModal();
+          await loadChannels();
+          alert('Сервер недоступен — канал сохранён локально.');
+          return;
+        }
+
+        const res = await fetch(`${window.API_BASE}/api/channels`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({ name })
+        });
+
+        const data = await res.json().catch(() => ({}));
+        if (res.ok) {
+          closeModal();
+          await loadChannels();
+          alert('Канал добавлен');
+        } else {
+          // log body for debugging
+          const body = await res.text().catch(() => null);
+          console.warn('POST /api/channels failed', res.status, body, data);
+          if (res.status === 401) {
+            alert('Требуется авторизация. Пожалуйста, войдите.');
+            window.location.href = 'index.html';
+            return;
+          }
+          alert(data.error || data.message || 'Ошибка добавления канала (см. консоль)');
+        }
+      } catch (err) {
+        console.error(err);
+        alert('Ошибка соединения с сервером');
+      }
+    }
+
+    // БЕЗОПАСНАЯ ИНИЦИАЛИЗАЦИЯ: Оборачиваем внешние функции в try/catch
+    document.addEventListener('DOMContentLoaded', () => {
+      try { if (typeof loadHeader === 'function') loadHeader(); } catch (e) { console.warn("Не удалось загрузить header", e); }
+      try { if (typeof loadFooter === 'function') loadFooter(); } catch (e) { console.warn("Не удалось загрузить footer", e); }
+      loadChannels();
+    });
+
+    function goBack() { window.history.back(); }
+    function goHome() { window.location.href = "home.html"; }
+  </script>
+</body>
+
+</html>

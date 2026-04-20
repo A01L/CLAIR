@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+  <meta charset="UTF-8">
+  <title>CLAIR — Профиль</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <link rel="stylesheet" href="../assets/css/style.css">
+
+  <style>
+    .profile-page main {
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      padding: 20px;
+      gap: 20px;
+    }
+
+    .profile-card {
+      background: #fff;
+      border-radius: 16px;
+      padding: 24px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+      max-width: 600px;
+      width: 100%;
+    }
+
+    .profile-header {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+    }
+
+    .profile-header img {
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 2px solid #2e44ff;
+    }
+
+    .profile-info h2 {
+      font-size: 20px;
+      margin: 0;
+      color: #2e44ff;
+    }
+
+    .profile-info p {
+      margin: 4px 0 0 0;
+      color: #555;
+      font-size: 14px;
+    }
+
+    .profile-actions {
+      margin-top: 20px;
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .profile-actions button {
+      padding: 10px 16px;
+      border: none;
+      border-radius: 8px;
+      background: #2e44ff;
+      color: #fff;
+      font-weight: 600;
+      cursor: pointer;
+      transition: 0.2s;
+    }
+
+    .profile-actions button:hover {
+      background: #1a2ecc;
+    }
+
+    /* edit modal */
+    .edit-modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.3);
+      backdrop-filter: blur(3px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+    }
+
+    .edit-modal-overlay.active {
+      display: flex;
+    }
+
+    .edit-modal {
+      background: #fff;
+      border-radius: 16px;
+      padding: 24px;
+      width: 420px;
+      max-width: 90%;
+      box-shadow: 0 4px 24px rgba(0, 0, 0, 0.15);
+    }
+
+    .edit-modal h2 {
+      color: #2e44ff;
+      margin-bottom: 16px;
+      font-size: 18px;
+    }
+
+    .form-group {
+      margin-bottom: 16px;
+    }
+
+    .form-group label {
+      display: block;
+      color: #2e44ff;
+      font-weight: 600;
+      font-size: 13px;
+      margin-bottom: 6px;
+    }
+
+    .form-group input {
+      width: 100%;
+      padding: 10px;
+      border-radius: 8px;
+      border: 2px solid #e0e0e0;
+      font-size: 14px;
+      outline: none;
+    }
+
+    .form-group input:focus {
+      border-color: #2e44ff;
+    }
+  </style>
+</head>
+
+<body class="profile-page">
+
+  <div class="container">
+
+    <div id="header"></div>
+
+    <div class="nav-buttons">
+      <button class="btn-back" onclick="goBack()">Назад</button>
+      <button class="btn-home" onclick="goHome()">Главная</button>
+    </div>
+
+    <main>
+      <div class="profile-card" id="profileCard">
+        <div class="profile-header">
+          <img id="profileAvatar" src="../assets/img/profile.png" alt="avatar">
+          <div class="profile-info">
+            <h2 id="profileName">Имя Пользователя</h2>
+            <p id="profileEmail">user@example.com</p>
+          </div>
+        </div>
+        <div class="profile-actions">
+          <button onclick="openEditModal('name')">Изменить имя</button>
+          <button onclick="openEditModal('email')">Изменить email</button>
+          <button onclick="openEditModal('avatar')">Изменить фото</button>
+          <button onclick="loadSettings('change-password')">Сменить пароль</button>
+        </div>
+      </div>
+    </main>
+
+    <div id="footer"></div>
+
+  </div>
+
+  <!-- edit modal -->
+  <div id="editModal" class="edit-modal-overlay">
+    <div class="edit-modal">
+      <h2 id="editTitle">Редактирование</h2>
+      <div class="form-group" id="editFieldGroup">
+        <label id="editLabel"></label>
+        <input type="text" id="editInput">
+      </div>
+      <div class="form-actions" style="display:flex; gap:12px;">
+        <button class="btn-cancel" onclick="closeEditModal()">Отмена</button>
+        <button class="btn-submit" onclick="saveEdit()">Сохранить</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="../scripts/config.js"></script>
+  <script src="../scripts/common.js"></script>
+  <script>
+    function loadProfile() {
+      const profile = JSON.parse(localStorage.getItem('user_profile') || '{}');
+      if (profile.name) document.getElementById('profileName').textContent = profile.name;
+      if (profile.email) document.getElementById('profileEmail').textContent = profile.email;
+      if (profile.avatar) document.getElementById('profileAvatar').src = profile.avatar;
+    }
+
+    function openEditModal(field) {
+      const modal = document.getElementById('editModal');
+      const title = document.getElementById('editTitle');
+      const label = document.getElementById('editLabel');
+      const input = document.getElementById('editInput');
+      modal.dataset.field = field;
+      if (field === 'name') {
+        title.textContent = 'Изменить имя';
+        label.textContent = 'Новое имя';
+        input.type = 'text';
+        input.value = document.getElementById('profileName').textContent;
+      } else if (field === 'email') {
+        title.textContent = 'Изменить email';
+        label.textContent = 'Новый email';
+        input.type = 'email';
+        input.value = document.getElementById('profileEmail').textContent;
+      } else if (field === 'avatar') {
+        title.textContent = 'Изменить фото';
+        label.textContent = 'URL изображения';
+        input.type = 'text';
+        input.value = document.getElementById('profileAvatar').src;
+      }
+      modal.classList.add('active');
+    }
+
+    function closeEditModal() {
+      document.getElementById('editModal').classList.remove('active');
+    }
+
+    function saveEdit() {
+      const modal = document.getElementById('editModal');
+      const field = modal.dataset.field;
+      const value = document.getElementById('editInput').value.trim();
+      const profile = JSON.parse(localStorage.getItem('user_profile') || '{}');
+      if (field === 'name') {
+        profile.name = value;
+      } else if (field === 'email') {
+        profile.email = value;
+      } else if (field === 'avatar') {
+        profile.avatar = value;
+      }
+      localStorage.setItem('user_profile', JSON.stringify(profile));
+      loadProfile();
+      closeEditModal();
+    }
+
+    document.addEventListener('DOMContentLoaded', loadProfile);
+  </script>
+
+</body>
+
+</html>

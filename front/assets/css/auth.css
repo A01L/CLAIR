@@ -1,0 +1,198 @@
+:root {
+  --bg-dark: #1f1f22;
+  --panel: #f3f3ff;
+  /* как в style.css */
+  --primary: #2e44ff;
+  --muted: #8b8f99;
+  --text: #1d1d1f;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, Arial;
+  background: url("../img/wallpaper.webp") no-repeat center center fixed;
+  background-size: cover;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.container {
+  width: 95%;
+  height: 95%;
+  max-width: 1400px;
+  background: var(--panel);
+  /* #f3f3ff */
+  backdrop-filter: blur(12px);
+  /* как в style.css */
+  border-radius: 25px;
+  padding: 20px;
+  box-shadow: 0 0 20px rgba(0, 0, 0, 0.4);
+  /* как в style.css */
+
+  display: flex;
+  flex-direction: column;
+}
+
+main {
+  flex: 1;
+  display: flex;
+  align-items: flex-start;
+  /* фиксируем начало сверху */
+  justify-content: center;
+  /* центрируем по горизонтали */
+}
+
+.auth-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+  margin-top: 20px;
+  /* логотип чуть выше, как в header */
+}
+
+.top-logo {
+  margin-bottom: 10px;
+}
+
+.top-logo img {
+  height: 24px;
+  /* как в header */
+  width: auto;
+  display: block;
+}
+
+.card-auth {
+  width: 380px;
+  background: white;
+  /* как карточки в style.css */
+  border-radius: 24px;
+  padding: 32px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, .07);
+  /* как карточки в style.css */
+
+  min-height: 400px;
+  /* одинаковая минимальная высота */
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  /* контент сверху */
+}
+
+.card-auth h4 {
+  margin: 0;
+  font-weight: 700;
+  text-align: center;
+}
+
+.subtext {
+  margin-top: 6px;
+  margin-bottom: 22px;
+  font-size: 13px;
+  text-align: center;
+  color: var(--muted);
+}
+
+.form-label-custom {
+  display: block;
+  margin-bottom: 6px;
+  margin-top: 14px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.form-control {
+  width: 100%;
+  height: 46px;
+  padding: 10px 14px;
+  border-radius: 18px;
+  border: 1.5px solid rgba(46, 68, 255, 0.12);
+  background: #f3f3ff;
+  /* как фон контейнера в style.css */
+  font-size: 14px;
+}
+
+.form-control:focus {
+  outline: none;
+  border-color: var(--primary);
+  background: #fff;
+}
+
+.btn-primary-custom,
+.btn-outline-custom {
+  width: 100%;
+  height: 48px;
+  border-radius: 20px;
+  font-weight: 600;
+  font-size: 14px;
+  margin-top: 20px;
+}
+
+.btn-primary-custom {
+  background: var(--primary);
+  border: none;
+  color: #fff;
+}
+
+.btn-primary-custom:hover {
+  opacity: 0.9;
+}
+
+.btn-outline-custom {
+  background: transparent;
+  color: var(--primary);
+  border: 2px solid var(--primary);
+  margin-top: 12px;
+}
+
+.btn-outline-custom:hover {
+  background: rgba(46, 68, 255, 0.05);
+}
+
+.forgot-password {
+  text-align: right;
+  font-size: 12px;
+  margin-top: 6px;
+}
+
+.forgot-password a {
+  color: var(--primary);
+  text-decoration: none;
+}
+
+.block-phone {
+  display: none;
+}
+
+@media (max-width: 750px) {
+  .block-phone {
+    display: block;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, .07);
+    /* #f3f3ff */
+    backdrop-filter: blur(12px);
+    /* как в style.css */
+    z-index: 9999;
+  }
+
+  .phone-content {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+    padding: 20px;
+  }
+}

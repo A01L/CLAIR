@@ -1,0 +1,622 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Clair Frontend</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #f4f7fb;
+      color: #1f2937;
+    }
+    .container {
+      max-width: 1300px;
+      margin: 0 auto;
+      padding: 24px;
+    }
+    .header, .card {
+      background: #fff;
+      border-radius: 20px;
+      padding: 20px;
+      box-shadow: 0 4px 18px rgba(15, 23, 42, 0.08);
+      margin-bottom: 20px;
+    }
+    .header h1 {
+      margin: 0 0 8px;
+      font-size: 32px;
+    }
+    .muted { color: #6b7280; }
+    .grid {
+      display: grid;
+      grid-template-columns: 2fr 1fr;
+      gap: 20px;
+    }
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+    .tabs {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+    .tab-btn {
+      border: none;
+      background: #e5e7eb;
+      padding: 10px 16px;
+      border-radius: 999px;
+      cursor: pointer;
+      font-weight: 600;
+    }
+    .tab-btn.active {
+      background: #111827;
+      color: white;
+    }
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+    label {
+      display: block;
+      font-size: 14px;
+      font-weight: 600;
+      margin-bottom: 6px;
+    }
+    input, textarea {
+      width: 100%;
+      padding: 12px 14px;
+      border: 1px solid #d1d5db;
+      border-radius: 12px;
+      font-size: 14px;
+      margin-bottom: 14px;
+      background: #fff;
+    }
+    textarea { resize: vertical; min-height: 120px; }
+    button {
+      border: none;
+      background: #111827;
+      color: white;
+      padding: 12px 16px;
+      border-radius: 12px;
+      cursor: pointer;
+      font-weight: 700;
+    }
+    button.secondary {
+      background: #e5e7eb;
+      color: #111827;
+    }
+    button.danger {
+      background: #b91c1c;
+    }
+    .row { display: flex; gap: 10px; flex-wrap: wrap; }
+    .status {
+      padding: 12px 14px;
+      border-radius: 12px;
+      background: #eef2ff;
+      margin-bottom: 12px;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+    .error {
+      background: #fef2f2;
+      color: #991b1b;
+    }
+    pre {
+      background: #f3f4f6;
+      padding: 14px;
+      border-radius: 12px;
+      overflow: auto;
+      white-space: pre-wrap;
+      word-break: break-word;
+      font-size: 12px;
+    }
+    .login-item {
+      border: 1px solid #e5e7eb;
+      border-radius: 14px;
+      padding: 14px;
+      margin-bottom: 10px;
+    }
+    .badge {
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: 999px;
+      background: #e5e7eb;
+      font-size: 12px;
+      margin-right: 6px;
+      margin-bottom: 6px;
+    }
+    .top-actions {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .summary-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+    .summary-box {
+      background: #f8fafc;
+      border: 1px solid #e5e7eb;
+      border-radius: 14px;
+      padding: 12px;
+    }
+    @media (max-width: 980px) {
+      .grid, .grid-2 { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <div class="top-actions">
+        <div>
+          <h1>Clair Frontend</h1>
+          <div class="muted">Обычный HTML/JS интерфейс для регистрации, логина, appeal, external appeal, удаления, отчётов и географии запросов.</div>
+        </div>
+        <div class="row">
+          <button class="secondary" onclick="loadProfileAndHistory()">Обновить профиль</button>
+          <button onclick="logout()">Выйти</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid">
+      <div class="card">
+        <div class="tabs">
+          <button class="tab-btn active" data-tab="auth">Auth</button>
+          <button class="tab-btn" data-tab="internal">Internal Appeal</button>
+          <button class="tab-btn" data-tab="external">External Appeal</button>
+          <button class="tab-btn" data-tab="delete">Delete</button>
+          <button class="tab-btn" data-tab="reports">Отчёт</button>
+          <button class="tab-btn" data-tab="geo">География</button>
+        </div>
+
+        <div id="tab-auth" class="tab-content active">
+          <div class="grid-2">
+            <div class="card" style="box-shadow:none;border:1px solid #e5e7eb; margin:0;">
+              <h3>Регистрация</h3>
+              <label>Username</label>
+              <input id="reg-username" type="text" />
+
+              <label>Password</label>
+              <input id="reg-password" type="password" />
+
+              <label>Full name</label>
+              <input id="reg-fullname" type="text" />
+
+              <label>Email</label>
+              <input id="reg-email" type="email" />
+
+              <button onclick="registerUser()">Зарегистрироваться</button>
+            </div>
+
+            <div class="card" style="box-shadow:none;border:1px solid #e5e7eb; margin:0;">
+              <h3>Логин</h3>
+              <label>Username</label>
+              <input id="login-username" type="text" />
+
+              <label>Password</label>
+              <input id="login-password" type="password" />
+
+              <button onclick="loginUser()">Войти</button>
+            </div>
+          </div>
+        </div>
+
+        <div id="tab-internal" class="tab-content">
+          <h3>Internal appeal через JWT</h3>
+          <label>Channel ID (cid)</label>
+          <input id="internal-cid" type="number" />
+
+          <label>Текст appeal</label>
+          <textarea id="internal-text"></textarea>
+
+          <button onclick="createInternalAppeal()">Отправить internal appeal</button>
+        </div>
+
+        <div id="tab-external" class="tab-content">
+          <h3>External appeal без JWT</h3>
+
+          <label>Channel Key</label>
+          <input id="external-channel-key" type="text" placeholder="x-channel-key" />
+
+          <label>Channel ID (cid)</label>
+          <input id="external-cid" type="number" placeholder="например 1" />
+
+          <label>Текст обращения</label>
+          <textarea id="external-text"></textarea>
+
+          <button onclick="createExternalAppeal()">Отправить external appeal</button>
+        </div>
+
+        <div id="tab-delete" class="tab-content">
+          <div class="grid-2">
+            <div class="card" style="box-shadow:none;border:1px solid #e5e7eb; margin:0;">
+              <h3>Удалить один appeal</h3>
+              <label>Appeal ID</label>
+              <input id="delete-appeal-id" type="number" />
+              <button class="danger" onclick="deleteAppeal()">Удалить appeal</button>
+            </div>
+
+            <div class="card" style="box-shadow:none;border:1px solid #e5e7eb; margin:0;">
+              <h3>Удалить все appeal канала</h3>
+              <label>Channel ID</label>
+              <input id="delete-channel-id" type="number" />
+              <button class="danger" onclick="deleteChannelAppeals()">Удалить все appeal</button>
+            </div>
+          </div>
+        </div>
+
+        <div id="tab-reports" class="tab-content">
+          <h3>Блок под отчёты</h3>
+          <p class="muted">Когда на backend будет endpoint типа <b>GET /reports</b> или <b>GET /channels/:id/appeals</b>, сюда можно подключить таблицу appeal, AI-анализ и IP metadata.</p>
+          <label>Пример запроса отчёта</label>
+          <input id="report-path" type="text" value="/channels/reports" />
+          <button onclick="requestReport()">Отправить запрос на отчёт</button>
+        </div>
+
+        <div id="tab-geo" class="tab-content">
+          <h3>История запросов и география</h3>
+
+          <label>Channel ID (необязательно)</label>
+          <input id="geo-channel-id" type="number" placeholder="если хочешь фильтр по каналу" />
+
+          <div class="row" style="margin-bottom: 14px;">
+            <button onclick="loadGeoHistory()">Загрузить историю</button>
+          </div>
+
+          <div id="geo-summary" class="status">Данных пока нет</div>
+          <div id="geo-history-box"></div>
+        </div>
+      </div>
+
+      <div>
+        <div class="card">
+          <h3>Состояние</h3>
+          <div id="status" class="status">Готово</div>
+          <div><b>JWT:</b></div>
+          <pre id="token-box">Нет токена</pre>
+        </div>
+
+        <div class="card">
+          <h3>Профиль / me</h3>
+          <pre id="profile-box">null</pre>
+        </div>
+
+        <div class="card">
+          <h3>Последний ответ API</h3>
+          <pre id="response-box">null</pre>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>История логинов</h3>
+      <div id="login-history-box">Логов пока нет</div>
+    </div>
+  </div>
+
+  <script>
+    const API_BASE = "http://localhost:3000/api";
+    let token = localStorage.getItem("clair_token") || "";
+
+    function setStatus(message, isError = false) {
+      const box = document.getElementById("status");
+      box.textContent = message;
+      box.className = isError ? "status error" : "status";
+    }
+
+    function setResponse(data) {
+      document.getElementById("response-box").textContent = JSON.stringify(data, null, 2);
+    }
+
+    function refreshTokenBox() {
+      document.getElementById("token-box").textContent = token || "Нет токена";
+    }
+
+    async function api(path, options = {}, withAuth = false) {
+      const headers = Object.assign({ "Content-Type": "application/json" }, options.headers || {});
+      if (withAuth && token) {
+        headers["Authorization"] = `Bearer ${token}`;
+      }
+
+      const response = await fetch(`${API_BASE}${path}`, {
+        ...options,
+        headers
+      });
+
+      const text = await response.text();
+      let data;
+      try {
+        data = text ? JSON.parse(text) : null;
+      } catch {
+        data = { raw: text };
+      }
+
+      if (!response.ok) {
+        throw new Error(data?.error || data?.message || `HTTP ${response.status}`);
+      }
+
+      return data;
+    }
+
+    async function registerUser() {
+      try {
+        setStatus("Регистрация...");
+        const payload = {
+          username: document.getElementById("reg-username").value.trim(),
+          password: document.getElementById("reg-password").value,
+          full_name: document.getElementById("reg-fullname").value.trim(),
+          email: document.getElementById("reg-email").value.trim(),
+          tg_push: false
+        };
+
+        const data = await api("/auth/register", {
+          method: "POST",
+          body: JSON.stringify(payload)
+        });
+
+        setResponse(data);
+        setStatus("Пользователь зарегистрирован");
+      } catch (e) {
+        setStatus(e.message, true);
+      }
+    }
+
+    async function loginUser() {
+      try {
+        setStatus("Вход...");
+        const payload = {
+          username: document.getElementById("login-username").value.trim(),
+          password: document.getElementById("login-password").value
+        };
+
+        const data = await api("/auth/login", {
+          method: "POST",
+          body: JSON.stringify(payload)
+        });
+
+        token = data.access_token || "";
+        localStorage.setItem("clair_token", token);
+        refreshTokenBox();
+        setResponse(data);
+        setStatus("Успешный вход");
+        await loadProfileAndHistory();
+      } catch (e) {
+        setStatus(e.message, true);
+      }
+    }
+
+    async function loadProfileAndHistory() {
+      if (!token) {
+        setStatus("Сначала войди", true);
+        return;
+      }
+
+      try {
+        const me = await api("/auth/me", { method: "GET" }, true);
+        document.getElementById("profile-box").textContent = JSON.stringify(me, null, 2);
+
+        const history = await api("/auth/login-history?limit=20", { method: "GET" }, true);
+        renderLoginHistory(history.items || []);
+      } catch (e) {
+        setStatus(e.message, true);
+      }
+    }
+
+    function renderLoginHistory(items) {
+      const box = document.getElementById("login-history-box");
+      if (!items.length) {
+        box.innerHTML = "Логов пока нет";
+        return;
+      }
+
+      box.innerHTML = items.map(item => `
+        <div class="login-item">
+          <div>
+            <span class="badge">#${item.id}</span>
+            <span class="badge">${item.browser || "unknown browser"}</span>
+            <span class="badge">${item.os || "unknown os"}</span>
+            <span class="badge">${item.device_type || "unknown device"}</span>
+          </div>
+          <div><b>IP:</b> ${item.ip_address || "-"}</div>
+          <div><b>Время:</b> ${item.login_at || "-"}</div>
+          <div><b>Успех:</b> ${String(item.is_success)}</div>
+          <div><b>UA:</b> ${item.user_agent || "-"}</div>
+        </div>
+      `).join("");
+    }
+
+    async function createInternalAppeal() {
+      try {
+        setStatus("Отправка internal appeal...");
+        const payload = {
+          cid: Number(document.getElementById("internal-cid").value),
+          text: document.getElementById("internal-text").value
+        };
+
+        const data = await api("/appeals", {
+          method: "POST",
+          body: JSON.stringify(payload)
+        }, true);
+
+        setResponse(data);
+        setStatus("Internal appeal отправлен в очередь");
+      } catch (e) {
+        setStatus(e.message, true);
+      }
+    }
+
+    async function createExternalAppeal() {
+      try {
+        setStatus("Отправка external appeal...");
+        const channelKey = document.getElementById("external-channel-key").value.trim();
+        const cid = Number(document.getElementById("external-cid").value);
+        const text = document.getElementById("external-text").value;
+
+        const data = await api("/appeals/external", {
+          method: "POST",
+          headers: {
+            "x-channel-key": channelKey
+          },
+          body: JSON.stringify({ cid, text })
+        });
+
+        setResponse(data);
+        setStatus("External appeal отправлен");
+      } catch (e) {
+        setStatus(e.message, true);
+      }
+    }
+
+    async function deleteAppeal() {
+      try {
+        setStatus("Удаление appeal...");
+        const appealId = Number(document.getElementById("delete-appeal-id").value);
+        const data = await api(`/appeals/${appealId}`, { method: "DELETE" }, true);
+        setResponse(data);
+        setStatus("Appeal удалён");
+      } catch (e) {
+        setStatus(e.message, true);
+      }
+    }
+
+    async function deleteChannelAppeals() {
+      try {
+        setStatus("Удаление appeal канала...");
+        const channelId = Number(document.getElementById("delete-channel-id").value);
+        const data = await api(`/appeals/channel/${channelId}/all`, { method: "DELETE" }, true);
+        setResponse(data);
+        setStatus("Все appeal канала удалены");
+      } catch (e) {
+        setStatus(e.message, true);
+      }
+    }
+
+    async function requestReport() {
+      try {
+        setStatus("Запрос отчёта...");
+        const path = document.getElementById("report-path").value.trim();
+        const data = await api(path, { method: "GET" }, true);
+        setResponse(data);
+        setStatus("Отчёт получен");
+      } catch (e) {
+        setStatus(e.message, true);
+      }
+    }
+
+    async function loadGeoHistory() {
+      try {
+        setStatus("Загрузка истории запросов...");
+
+        const channelIdRaw = document.getElementById("geo-channel-id").value.trim();
+        const path = channelIdRaw
+          ? `/appeals/history?channel_id=${Number(channelIdRaw)}`
+          : `/appeals/history`;
+
+        const data = await api(path, { method: "GET" }, true);
+
+        setResponse(data);
+        renderGeoHistory(data.items || []);
+        setStatus("История запросов загружена");
+      } catch (e) {
+        setStatus(e.message, true);
+      }
+    }
+
+    function renderGeoHistory(items) {
+      const box = document.getElementById("geo-history-box");
+      const summary = document.getElementById("geo-summary");
+
+      if (!items.length) {
+        summary.textContent = "История пустая";
+        box.innerHTML = "";
+        return;
+      }
+
+      const countries = {};
+      const cities = {};
+
+      for (const item of items) {
+        const country = item.country || "Unknown";
+        const city = item.city || "Unknown";
+
+        countries[country] = (countries[country] || 0) + 1;
+        cities[city] = (cities[city] || 0) + 1;
+      }
+
+      const topCountries = Object.entries(countries)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 5)
+        .map(([name, count]) => `${name}: ${count}`)
+        .join(", ");
+
+      const topCities = Object.entries(cities)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 5)
+        .map(([name, count]) => `${name}: ${count}`)
+        .join(", ");
+
+      summary.innerHTML = `
+        <div class="summary-grid">
+          <div class="summary-box"><b>Всего запросов:</b><br>${items.length}</div>
+          <div class="summary-box"><b>Топ страны:</b><br>${topCountries || "-"}</div>
+          <div class="summary-box"><b>Топ города:</b><br>${topCities || "-"}</div>
+        </div>
+      `;
+
+      box.innerHTML = items.map(item => `
+        <div class="login-item">
+          <div>
+            <span class="badge">appeal #${item.appeal_id}</span>
+            <span class="badge">channel #${item.channel_id}</span>
+            <span class="badge">${item.country || "unknown country"}</span>
+            <span class="badge">${item.city || "unknown city"}</span>
+          </div>
+
+          <div><b>IP:</b> ${item.ip_address || "-"}</div>
+          <div><b>Region:</b> ${item.region || "-"}</div>
+          <div><b>Provider:</b> ${item.provider || "-"}</div>
+          <div><b>Org:</b> ${item.org || "-"}</div>
+          <div><b>Created:</b> ${item.created_at || "-"}</div>
+          <div><b>Status:</b> ${item.status || "-"}</div>
+          <div><b>Type:</b> ${item.type || "-"}</div>
+          <div><b>Text:</b> ${item.text || "-"}</div>
+        </div>
+      `).join("");
+    }
+
+    function logout() {
+      token = "";
+      localStorage.removeItem("clair_token");
+      refreshTokenBox();
+      document.getElementById("profile-box").textContent = "null";
+      document.getElementById("login-history-box").innerHTML = "Логов пока нет";
+      document.getElementById("geo-history-box").innerHTML = "";
+      document.getElementById("geo-summary").textContent = "Данных пока нет";
+      setStatus("Вы вышли из аккаунта");
+    }
+
+    document.querySelectorAll(".tab-btn").forEach(btn => {
+      btn.addEventListener("click", () => {
+        document.querySelectorAll(".tab-btn").forEach(x => x.classList.remove("active"));
+        document.querySelectorAll(".tab-content").forEach(x => x.classList.remove("active"));
+        btn.classList.add("active");
+        document.getElementById(`tab-${btn.dataset.tab}`).classList.add("active");
+      });
+    });
+
+    refreshTokenBox();
+    if (token) {
+      loadProfileAndHistory();
+    }
+  </script>
+</body>
+</html>

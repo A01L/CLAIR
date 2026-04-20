@@ -1,0 +1,796 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+  <meta charset="UTF-8">
+  <title>CLAIR — Настройки</title>
+
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <link rel="stylesheet" href="../assets/css/style.css">
+
+  <style>
+    /* ОБЁРТКА СТРАНИЦЫ */
+    .settings-wrapper {
+      width: 100%;
+      display: flex;
+      gap: 24px;
+      padding: 20px 40px;
+      min-height: 400px;
+    }
+
+    /* ЛЕВАЯ ПАНЕЛЬ */
+    .settings-sidebar {
+      width: 260px;
+      background: #fff;
+      border-radius: 20px;
+      padding: 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+      height: fit-content;
+    }
+
+    .settings-sidebar button {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: #e6e8ff;
+      color: #2e44ff;
+      border: none;
+      border-radius: 12px;
+      padding: 10px 12px;
+      font-weight: 600;
+      font-size: 14px;
+      cursor: pointer;
+      text-decoration: none;
+      transition: 0.2s;
+      width: 100%;
+    }
+
+    .settings-sidebar button:hover,
+    .settings-sidebar button.active {
+      background: #2e44ff;
+      color: #fff;
+    }
+
+    .settings-sidebar img {
+      width: 18px;
+      height: 18px;
+      flex-shrink: 0;
+    }
+
+    /* ПРАВАЯ ЧАСТЬ */
+    .settings-main {
+      flex: 1;
+      background: #fff;
+      border-radius: 20px;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+      padding: 30px;
+      overflow-y: auto;
+      max-height: 600px;
+    }
+
+    .settings-content {
+      display: none;
+    }
+
+    .settings-content.active {
+      display: block;
+    }
+
+    .settings-title {
+      font-size: 18px;
+      font-weight: 600;
+      color: #2e44ff;
+      margin-bottom: 16px;
+    }
+
+    .form-group {
+      margin-bottom: 16px;
+    }
+
+    .form-group label {
+      display: block;
+      color: #2e44ff;
+      font-weight: 600;
+      font-size: 13px;
+      margin-bottom: 6px;
+    }
+
+    .form-group input {
+      width: 100%;
+      padding: 10px;
+      border-radius: 8px;
+      border: 2px solid #e0e0e0;
+      font-size: 14px;
+      outline: none;
+    }
+
+    .form-group input:focus {
+      border-color: #2e44ff;
+    }
+
+    .form-error {
+      color: #ff3b3b;
+      font-size: 12px;
+      margin-top: 4px;
+      display: none;
+    }
+
+    .form-error.show {
+      display: block;
+    }
+
+    .form-actions {
+      display: flex;
+      gap: 12px;
+      margin-top: 20px;
+    }
+
+    .btn-submit,
+    .btn-cancel {
+      flex: 1;
+      padding: 10px;
+      border-radius: 8px;
+      border: none;
+      font-weight: 600;
+      cursor: pointer;
+      transition: 0.2s;
+    }
+
+    .btn-submit {
+      background: #2e44ff;
+      color: #fff;
+    }
+
+    .btn-submit:hover {
+      background: #1a2ecc;
+    }
+
+    .btn-cancel {
+      background: #e0e0e0;
+      color: #333;
+    }
+
+    .btn-cancel:hover {
+      background: #d0d0d0;
+    }
+
+    .message {
+      padding: 12px;
+      border-radius: 8px;
+      font-size: 13px;
+      margin-bottom: 16px;
+      display: none;
+    }
+
+    .message.success {
+      background: #d4edda;
+      color: #155724;
+      display: block;
+    }
+
+    .message.error {
+      background: #f8d7da;
+      color: #721c24;
+      display: block;
+    }
+
+    /* Key Modal Overlay */
+    .key-modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.3);
+      backdrop-filter: blur(3px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+    }
+
+    .key-modal-overlay.active {
+      display: flex;
+    }
+
+    .key-modal-window {
+      background: #fff;
+      border-radius: 16px;
+      padding: 24px;
+      width: 450px;
+      max-width: 90%;
+      box-shadow: 0 4px 24px rgba(0, 0, 0, 0.15);
+    }
+
+    .key-modal-window h2 {
+      color: #2e44ff;
+      margin-bottom: 16px;
+      font-size: 18px;
+    }
+
+    .key-modal-form {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .key-modal-form label {
+      color: #2e44ff;
+      font-weight: 600;
+      font-size: 13px;
+    }
+
+    .key-modal-form input {
+      width: 100%;
+      padding: 10px;
+      border-radius: 8px;
+      border: 2px solid #e0e0e0;
+      font-size: 14px;
+      outline: none;
+    }
+
+    .key-modal-form input:focus {
+      border-color: #2e44ff;
+    }
+
+    .key-modal-actions {
+      display: flex;
+      gap: 12px;
+      margin-top: 16px;
+    }
+
+    .key-modal-actions button {
+      flex: 1;
+      padding: 10px;
+      border-radius: 8px;
+      border: none;
+      font-weight: 600;
+      cursor: pointer;
+      transition: 0.2s;
+    }
+
+    .key-modal-actions .btn-cancel {
+      background: #e0e0e0;
+      color: #333;
+    }
+
+    .key-modal-actions .btn-cancel:hover {
+      background: #d0d0d0;
+    }
+
+    .key-modal-actions .btn-save {
+      background: #2e44ff;
+      color: #fff;
+    }
+
+    .key-modal-actions .btn-save:hover {
+      background: #1a2ecc;
+    }
+  </style>
+</head>
+
+<body class="settings-page">
+
+  <div class="container">
+    <div id="header"></div>
+
+    <div id="header"></div>
+
+    <div class="nav-buttons">
+      <button class="btn-back" onclick="goBack()">Назад</button>
+      <button class="btn-home" onclick="goHome()">Главная</button>
+    </div>
+
+    <main>
+
+      <div class="settings-wrapper">
+
+        <nav class="settings-sidebar">
+          <button class="active" onclick="loadSettings('key-management')">
+            <img src="../assets/img/Key.png" alt="">
+            Управление ключами
+          </button>
+          <button onclick="loadSettings('change-password')">
+            <img src="../assets/img/Shield.png" alt="">
+            Смена пароля
+          </button>
+          <button onclick="loadSettings('change-login')">
+            <img src="../assets/img/User.png" alt="">
+            Смена логина
+          </button>
+          <button onclick="loadSettings('login-history')">
+            <img src="../assets/img/history.png" alt="">
+            История входов
+          </button>
+          <button onclick="loadSettings('entry-settings')">
+            <img src="../assets/img/entry.png" alt="">
+            Вход в страницу
+          </button>
+          <button onclick="confirmLogout()" style="background: #ff4444; color: #fff; margin-top: auto;">
+            <img src="../assets/Img/closed.png" alt="" style="filter: brightness(0) invert(1);">
+            Выход
+          </button>
+        </nav>
+
+        <section class="settings-main" id="settingsMain">
+          <!-- Контент будет загружаться здесь -->
+          <div class="settings-content active" id="content-key-management">
+            <h2 class="settings-title">Управление ключами</h2>
+            <p>Добавьте ключ ИИ (Gemini, ChatGPT и т.д.) для анализа отзывов.</p>
+            <button class="btn-submit" onclick="openAddKeyModal()" style="width: 200px; margin-top: 16px;">+ Добавить
+              ключ</button>
+            <div id="keysList" style="margin-top: 20px;"></div>
+            <div id="keySaveMessage" style="margin-top:12px;"></div>
+          </div>
+
+          <div class="settings-content" id="content-change-password">
+            <h2 class="settings-title">Смена пароля</h2>
+            <form onsubmit="changePassword(event)">
+              <div class="form-group">
+                <label>Текущий пароль</label>
+                <input type="password" id="currentPassword" required>
+                <div class="form-error" id="err-currentPassword"></div>
+              </div>
+              <div class="form-group">
+                <label>Новый пароль</label>
+                <input type="password" id="newPassword" required minlength="6">
+                <div class="form-error" id="err-newPassword"></div>
+              </div>
+              <div class="form-group">
+                <label>Подтвердите новый пароль</label>
+                <input type="password" id="confirmPassword" required minlength="6">
+                <div class="form-error" id="err-confirmPassword"></div>
+              </div>
+              <div class="form-actions">
+                <button type="button" class="btn-cancel" onclick="resetForm()">Отмена</button>
+                <button type="submit" class="btn-submit">Изменить</button>
+              </div>
+            </form>
+          </div>
+
+          <div class="settings-content" id="content-change-login">
+            <h2 class="settings-title">Смена логина</h2>
+            <form onsubmit="changeLogin(event)">
+              <div class="form-group">
+                <label>Новый логин</label>
+                <input type="text" id="newLogin" required minlength="3">
+                <div class="form-error" id="err-newLogin"></div>
+              </div>
+              <div class="form-group">
+                <label>Пароль (для подтверждения)</label>
+                <input type="password" id="passwordConfirm" required>
+                <div class="form-error" id="err-passwordConfirm"></div>
+              </div>
+              <div class="form-actions">
+                <button type="button" class="btn-cancel" onclick="resetForm()">Отмена</button>
+                <button type="submit" class="btn-submit">Изменить</button>
+              </div>
+            </form>
+          </div>
+
+          <div class="settings-content" id="content-login-history">
+            <h2 class="settings-title">История входов</h2>
+            <p style="margin-bottom: 16px;">Ваши последние попытки входа:</p>
+            <div id="historyList" style="display: flex; flex-direction: column; gap: 12px;"></div>
+          </div>
+
+          <div class="settings-content" id="content-entry-settings">
+            <h2 class="settings-title">Вход в страницу</h2>
+            <div class="form-group" style="border: 1px solid #e0e0e0; padding: 12px; border-radius: 8px;">
+              <label>
+                <input type="checkbox" id="requirePasswordOnEntry" style="width: auto; margin-right: 8px;">
+                Требовать пароль при входе с нового устройства
+              </label>
+            </div>
+            <button class="btn-submit" style="width: 200px; margin-top: 16px;"
+              onclick="saveEntrySettings()">Сохранить</button>
+          </div>
+        </section>
+
+      </div>
+
+    </main>
+
+    <div id="footer"></div>
+
+    <!-- Key Modal -->
+    <div id="addKeyModal" class="key-modal-overlay">
+      <div class="key-modal-window">
+        <h2>Добавить API ключ</h2>
+        <form class="key-modal-form" onsubmit="submitAddKey(event)">
+          <div>
+            <label>Название сервиса *</label>
+            <input type="text" id="keyName" placeholder="например, Gemini" required>
+          </div>
+          <div>
+            <label>API ключ *</label>
+            <input type="password" id="keyValue" placeholder="вставьте ваш ключ" required>
+          </div>
+          <div class="key-modal-actions">
+            <button type="button" class="btn-cancel" onclick="closeAddKeyModal()">Отмена</button>
+            <button type="submit" class="btn-save">Добавить</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Email code modal for key actions -->
+    <div id="keyCodeModal" class="key-modal-overlay">
+      <div class="key-modal-window">
+        <h2 id="keyCodeTitle">Подтверждение действия</h2>
+        <p>Код отправлен на ваш email. Введите его для подтверждения.</p>
+        <form class="key-modal-form" onsubmit="confirmKeyAction(event)">
+          <div>
+            <label>Код подтверждения *</label>
+            <input type="text" id="keyCode" required>
+          </div>
+          <div class="key-modal-actions">
+            <button type="button" class="btn-cancel" onclick="closeKeyCodeModal()">Отмена</button>
+            <button type="submit" class="btn-save">Подтвердить</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+  </div>
+
+  <script src="../scripts/config.js"></script>
+  <script src="../scripts/common.js"></script>
+
+  <script>
+    // SPA переключение разделов
+    function loadSettings(section, event) {
+      document.querySelectorAll('.settings-content').forEach(el => el.classList.remove('active'));
+      document.getElementById(`content-${section}`).classList.add('active');
+
+      document.querySelectorAll('.settings-sidebar button').forEach(btn => btn.classList.remove('active'));
+      if (event) event.target.closest('button').classList.add('active');
+
+      if (section === 'key-management') loadKeysList();
+      if (section === 'login-history') loadLoginHistory();
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      const hash = window.location.hash.replace('#', '');
+      if (hash && document.getElementById(`content-${hash}`)) {
+        loadSettings(hash);
+      } else {
+        loadSettings('key-management');
+      }
+      loadHeader();
+      loadFooter();
+      loadKeysList();
+    });
+
+    // === Управление ключами ===
+    async function loadKeysList() {
+      const list = document.getElementById('keysList');
+      const serverUp = await window.serverPing();
+
+      // Load local keys first
+      const local = JSON.parse(localStorage.getItem('ai_keys') || '[]');
+
+      // GeminI last4 stored locally after successful PATCH
+      const geminiLast4 = localStorage.getItem('gemini_last4');
+
+      // If server is down, show only local keys and gemini if present
+      if (!serverUp) {
+        if ((!local || local.length === 0) && !geminiLast4) {
+          list.innerHTML = '<p style="color:#999;">Нет добавленных ключей (сервер недоступен)</p>';
+          return;
+        }
+
+        const parts = [];
+        if (geminiLast4) {
+          parts.push(`
+            <div style="background:#f9f9f9;padding:12px;border-radius:8px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;">
+              <div>
+                <strong style="color:#2e44ff;">Gemini</strong>
+                <p style="font-size:12px;color:#999;">****${geminiLast4} <span style=\"font-size:11px;color:#666;\">(сервер/локально)</span></p>
+              </div>
+              <button onclick="deleteGeminiKey()" style="background:#ff4444;color:#fff;border:none;padding:6px 12px;border-radius:6px;cursor:pointer;font-size:12px;">Удалить</button>
+            </div>
+          `);
+        }
+
+        if (local && local.length > 0) {
+          parts.push(...local.map((key, idx) => `
+            <div style="background:#f9f9f9;padding:12px;border-radius:8px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;">
+              <div>
+                <strong style="color:#2e44ff;">${key.name} <span style=\"font-size:11px;color:#666;\">(локально)</span></strong>
+                <p style="font-size:12px;color:#999;">${(key.key || '').substring(0, 10)}...</p>
+              </div>
+              <button onclick="deleteKeyLocal(${idx})" style="background:#ff4444;color:#fff;border:none;padding:6px 12px;border-radius:6px;cursor:pointer;font-size:12px;">Удалить</button>
+            </div>
+          `));
+        }
+
+        list.innerHTML = parts.join('');
+        return;
+      }
+
+      // server is up — try to show gemini status (we can't fetch server-stored keys directly), and local keys
+      const parts = [];
+      if (geminiLast4) {
+        parts.push(`
+          <div style="background:#f9f9f9;padding:12px;border-radius:8px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;">
+            <div>
+              <strong style="color:#2e44ff;">Gemini</strong>
+              <p style="font-size:12px;color:#999;">****${geminiLast4} <span style=\"font-size:11px;color:#666;\">(сохранён)</span></p>
+            </div>
+            <button onclick="deleteGeminiKey()" style="background:#ff4444;color:#fff;border:none;padding:6px 12px;border-radius:6px;cursor:pointer;font-size:12px;">Удалить</button>
+          </div>
+        `);
+      }
+
+      if (local && local.length > 0) {
+        parts.push(...local.map((key, idx) => `
+          <div style="background:#f9f9f9;padding:12px;border-radius:8px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;">
+            <div>
+              <strong style="color:#2e44ff;">${key.name}</strong>
+              <p style="font-size:12px;color:#999;">${(key.key || '').substring(0, 10)}...</p>
+            </div>
+            <button onclick="deleteKeyLocal(${idx})" style="background:#ff4444;color:#fff;border:none;padding:6px 12px;border-radius:6px;cursor:pointer;font-size:12px;">Удалить</button>
+          </div>
+        `));
+      }
+
+      if (parts.length === 0) {
+        list.innerHTML = '<p style="color:#999;">Нет добавленных ключей</p>';
+      } else {
+        list.innerHTML = parts.join('');
+      }
+    }
+
+    async function submitAddKey(e) {
+      e.preventDefault();
+      const msgEl = document.getElementById('keySaveMessage');
+      msgEl.textContent = '';
+      const keyName = document.getElementById('keyName').value.trim();
+      const keyValue = document.getElementById('keyValue').value.trim();
+      if (!keyName || !keyValue) {
+        alert('Заполните все поля');
+        return;
+      }
+      // Disable submit button
+      const submitBtn = document.querySelector('#addKeyModal .btn-save');
+      if (submitBtn) submitBtn.disabled = true;
+      try {
+        const serverUp = await window.serverPing();
+        if (!serverUp) {
+          // fallback: сохраняем локально и показываем сообщение
+          const local = JSON.parse(localStorage.getItem('ai_keys') || '[]');
+          local.push({ name: keyName, key: keyValue });
+          localStorage.setItem('ai_keys', JSON.stringify(local));
+          msgEl.className = 'message error';
+          msgEl.textContent = 'Сервер недоступен — ключ сохранён локально.';
+          closeAddKeyModal();
+          loadKeysList();
+          return;
+        }
+
+        if (keyName.toLowerCase().includes('gemini')) {
+          const r = await fetch(`${window.API_BASE}/api/me/gemini-key`, {
+            method: 'PATCH',
+            headers: {
+              'Authorization': `Bearer ${window.getAuthToken()}`,
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ gemini_api_key: keyValue })
+          });
+          if (!r.ok) {
+            if (r.status === 401) {
+              msgEl.className = 'message error';
+              msgEl.textContent = 'Нет доступа к серверу. Ключ сохранён локально.';
+              const local = JSON.parse(localStorage.getItem('ai_keys') || '[]');
+              local.push({ name: keyName, key: keyValue });
+              localStorage.setItem('ai_keys', JSON.stringify(local));
+              closeAddKeyModal();
+              loadKeysList();
+              return;
+            }
+            const d = await r.json().catch(() => ({}));
+            throw new Error(d.error || 'server');
+          }
+          const rr = await r.json().catch(() => ({}));
+          msgEl.className = 'message success';
+          msgEl.textContent = 'Ключ Gemini сохранён на сервере.';
+          if (rr.last4) localStorage.setItem('gemini_last4', rr.last4);
+          closeAddKeyModal();
+          loadKeysList();
+          return;
+        }
+
+        // Backend does not expose generic /api/keys endpoint; save non-Gemini keys locally
+        const local = JSON.parse(localStorage.getItem('ai_keys') || '[]');
+        local.push({ name: keyName, key: keyValue });
+        localStorage.setItem('ai_keys', JSON.stringify(local));
+        msgEl.className = 'message success';
+        msgEl.textContent = 'Ключ сохранён локально.';
+        closeAddKeyModal();
+        loadKeysList();
+      } catch (err) {
+        const local = JSON.parse(localStorage.getItem('ai_keys') || '[]');
+        local.push({ name: keyName, key: keyValue });
+        localStorage.setItem('ai_keys', JSON.stringify(local));
+        if (msgEl) {
+          msgEl.className = 'message error';
+          msgEl.textContent = 'Ошибка при отправке — ключ сохранён локально.';
+        }
+        closeAddKeyModal();
+        loadKeysList();
+      } finally {
+        if (submitBtn) submitBtn.disabled = false;
+      }
+    }
+
+    async function deleteKey(idx) {
+      // legacy: no server-side generic keys endpoint — fall back to local
+      alert('Этот ключ хранится локально. Используйте удаление из списка локальных ключей.');
+    }
+
+    async function deleteGeminiKey() {
+      try {
+        const res = await fetch(`${window.API_BASE}/api/me/gemini-key`, {
+          method: 'DELETE',
+          headers: { 'Authorization': `Bearer ${window.getAuthToken()}` }
+        });
+        if (res.ok) {
+          localStorage.removeItem('gemini_last4');
+          loadKeysList();
+          return;
+        }
+        const body = await res.text().catch(() => null);
+        console.warn('DELETE /api/me/gemini-key failed', res.status, body);
+        alert('Не удалось удалить ключ на сервере');
+      } catch (e) {
+        console.error(e);
+        alert('Ошибка соединения при удалении ключа');
+      }
+    }
+
+    function deleteKeyLocal(idx) {
+      const local = JSON.parse(localStorage.getItem('ai_keys') || '[]');
+      local.splice(idx, 1);
+      localStorage.setItem('ai_keys', JSON.stringify(local));
+      loadKeysList();
+    }
+
+    // === Смена пароля ===
+    async function changePassword(e) {
+      e.preventDefault();
+      clearErrors();
+      const current = document.getElementById('currentPassword').value;
+      const newPass = document.getElementById('newPassword').value;
+      const confirm = document.getElementById('confirmPassword').value;
+      if (newPass !== confirm) {
+        showError('err-confirmPassword', 'Пароли не совпадают');
+        return;
+      }
+      try {
+        await fetch(`${window.API_BASE}/api/change-password`, {
+          method: "POST",
+          headers: {
+            "Authorization": `Bearer ${window.getAuthToken()}`,
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({ current, newPass })
+        });
+        alert('Пароль успешно изменён!');
+        resetForm();
+      } catch (err) {
+        alert("Ошибка смены пароля");
+      }
+    }
+
+    // === Смена логина ===
+    async function changeLogin(e) {
+      e.preventDefault();
+      clearErrors();
+      const newLogin = document.getElementById('newLogin').value;
+      const password = document.getElementById('passwordConfirm').value;
+      try {
+        await fetch(`${window.API_BASE}/api/change-login`, {
+          method: "POST",
+          headers: {
+            "Authorization": `Bearer ${window.getAuthToken()}`,
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({ newLogin, password })
+        });
+        alert('Логин успешно изменён!');
+        resetForm();
+      } catch (err) {
+        alert("Ошибка смены логина");
+      }
+    }
+
+    // === История входов ===
+    async function loadLoginHistory() {
+      const list = document.getElementById('historyList');
+      try {
+        const response = await fetch(`${window.API_BASE}/api/login-history`, {
+          headers: { "Authorization": `Bearer ${window.getAuthToken()}` }
+        });
+        const history = await response.json();
+        if (!history || history.length === 0) {
+          list.innerHTML = '<p style="color:#999;">Нет истории входов</p>';
+          return;
+        }
+        list.innerHTML = history.slice(-10).reverse().map(entry => `
+        <div style="background:#f9f9f9;padding:12px;border-radius:8px;">
+          <div style="display:flex;justify-content:space-between;margin-bottom:4px;">
+            <strong style="color:#2e44ff;">${entry.device || 'Неизвестное устройство'}</strong>
+            <span style="color:#999;font-size:12px;">${entry.timestamp || 'N/A'}</span>
+          </div>
+          <p style="font-size:12px;color:#666;">${entry.location || 'Неизвестное местоположение'}</p>
+        </div>
+      `).join('');
+      } catch (err) {
+        list.innerHTML = '<p style="color:#999;">Ошибка загрузки истории</p>';
+      }
+    }
+
+    // === Параметры входа ===
+    function saveEntrySettings() {
+      const requirePassword = document.getElementById('requirePasswordOnEntry').checked;
+      localStorage.setItem('require_password_on_entry', requirePassword);
+      alert('Параметры сохранены!');
+    }
+
+    // Вспомогательные функции
+    function clearErrors() {
+      document.querySelectorAll('.form-error').forEach(el => {
+        el.classList.remove('show');
+        el.textContent = '';
+      });
+    }
+    function showError(elementId, message) {
+      const el = document.getElementById(elementId);
+      if (el) {
+        el.textContent = message;
+        el.classList.add('show');
+      }
+    }
+    function resetForm() {
+      document.querySelectorAll('form').forEach(form => form.reset());
+      clearErrors();
+    }
+
+    // === Modal helpers for key management ===
+    function openAddKeyModal() {
+      const m = document.getElementById('addKeyModal');
+      if (m) m.classList.add('active');
+    }
+    function closeAddKeyModal() {
+      const m = document.getElementById('addKeyModal');
+      if (m) m.classList.remove('active');
+      // reset form
+      const name = document.getElementById('keyName');
+      const value = document.getElementById('keyValue');
+      if (name) name.value = '';
+      if (value) value.value = '';
+    }
+
+    function closeKeyCodeModal() {
+      const m = document.getElementById('keyCodeModal');
+      if (m) m.classList.remove('active');
+      const code = document.getElementById('keyCode'); if (code) code.value = '';
+    }
+
+    async function confirmKeyAction(e) {
+      e.preventDefault();
+      // Temporary: just close the modal and reload keys
+      closeKeyCodeModal();
+      loadKeysList();
+    }
+  </script>
+
+
+</body>
+
+</html>

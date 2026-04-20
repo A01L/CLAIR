@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Авторизация — CLAIR</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.1/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="assets/css/auth.css">
+</head>
+
+<body class="auth-page">
+  <script src="scripts/config.js"></script>
+  <script src="scripts/common.js"></script>
+  <script>
+    if (sessionStorage.getItem("auth_token") || localStorage.getItem("auth_token")) {
+      window.location.href = "main/home.html";
+    }
+  </script>
+  <div class="block-phone">
+    <div class="phone-content">
+      <h2>Внимание</h2>
+      <p>Пожалуйста, используйте устройство с большим экраном.</p>
+    </div>
+  </div>
+  <div class="container">
+    <main>
+      <div class="auth-wrapper">
+        <div class="top-logo">
+          <img src="assets/logo/logo.svg" alt="CLAIR">
+        </div>
+        <div class="card-auth">
+          <h4><b>Войти в кабинет</b></h4>
+          <div class="subtext">Добро пожаловать в CLAIR!</div>
+          <form id="loginForm">
+            <label class="form-label-custom" for="username">Логин (Username)</label>
+            <input id="username" class="form-control" type="text" placeholder="Введите ваш логин" required>
+            <div id="usernameError" class="text-danger" style="font-size: 12px; margin-top: 4px; display: none;"></div>
+
+            <label class="form-label-custom" for="password">Пароль</label>
+            <input id="password" class="form-control" type="password" placeholder="********" required minlength="6">
+            <div id="passwordError" class="text-danger" style="font-size: 12px; margin-top: 4px; display: none;"></div>
+
+            <div class="forgot-password">
+              <a href="main/reset.html">Забыли пароль?</a>
+            </div>
+
+            <button id="loginBtn" class="btn btn-primary btn-primary-custom mt-3" type="submit">Авторизация</button>
+            <button class="btn btn-outline btn-outline-custom mt-2" type="button"
+              onclick="window.location.href='main/sign-up.html'">Регистрация</button>
+          </form>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    const usernameError = document.getElementById("usernameError");
+    const passwordError = document.getElementById("passwordError");
+    const loginBtn = document.getElementById("loginBtn");
+
+    document.getElementById("loginForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      loginBtn.disabled = true;
+      loginBtn.textContent = "Вход...";
+      usernameError.style.display = "none";
+      passwordError.style.display = "none";
+
+      const usernameValue = document.getElementById("username").value.trim();
+      const passwordValue = document.getElementById("password").value;
+
+      try {
+        const response = await fetch(window.API_BASE + "/api/auth/login", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ username: usernameValue, password: passwordValue }),
+        });
+
+        const data = await response.json().catch(() => ({}));
+
+        if (response.ok) {
+          const token = data.access_token || data.token;
+          if (token) {
+            // keep token in sessionStorage so it is cleared when browser/tab is closed
+            sessionStorage.setItem("auth_token", token);
+            // legacy key kept for compatibility if needed
+            sessionStorage.setItem("token", token);
+            localStorage.setItem("username", usernameValue);
+            const realName = data.full_name || data.userName || (data.user && data.user.full_name) || usernameValue;
+            localStorage.setItem("userName", realName);
+            // Переход в папку main
+            window.location.href = "main/home.html";
+          } else {
+            alert("Ошибка: сервер не прислал токен.");
+          }
+        } else {
+          const errorMsg = data.message || data.error || "Неверный логин или пароль";
+          if (errorMsg.toLowerCase().includes("пароль")) {
+            passwordError.textContent = errorMsg;
+            passwordError.style.display = "block";
+          } else {
+            usernameError.textContent = errorMsg;
+            usernameError.style.display = "block";
+          }
+        }
+      } catch (err) {
+        console.error(err);
+        alert("Ошибка соединения с сервером.");
+      } finally {
+        loginBtn.disabled = false;
+        loginBtn.textContent = "Авторизация";
+      }
+    });
+  </script>
+</body>
+
+</html>

@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Сброс пароля — CLAIR</title>
+
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.1/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="../assets/css/auth.css">
+</head>
+
+<body class="auth-page">
+
+  <div class="container">
+    <main>
+      <div class="auth-wrapper">
+        <div class="top-logo">
+          <img src="../assets/logo/logo.svg" alt="CLAIR">
+        </div>
+
+        <div class="card-auth">
+          <h4><b>Сброс пароля</b></h4>
+          <div class="subtext">Введите email, чтобы получить код сброса</div>
+
+          <form id="resetForm">
+            <!-- Шаг 1: Email -->
+            <div id="step1">
+              <label class="form-label-custom" for="email">Электронная почта</label>
+              <input id="email" class="form-control" type="email" placeholder="example@clair.com" required>
+
+              <button class="btn btn-primary btn-primary-custom mt-3" type="button" id="sendCodeBtn">Отправить
+                код</button>
+              <button class="btn btn-outline btn-outline-custom mt-2" type="button"
+                onclick="window.location.href='../index.html'">Назад ко входу</button>
+            </div>
+
+            <!-- Шаг 2: Код и новый пароль -->
+            <div id="step2" style="display:none;">
+              <label class="form-label-custom" for="code">Код сброса</label>
+              <input id="code" class="form-control" type="text" placeholder="Введите код" required>
+
+              <label class="form-label-custom" for="newPassword">Новый пароль</label>
+              <input id="newPassword" class="form-control" type="password" placeholder="********" required
+                minlength="6">
+
+              <label class="form-label-custom" for="confirmPassword">Подтверждение пароля</label>
+              <input id="confirmPassword" class="form-control" type="password" placeholder="********" required
+                minlength="6">
+
+              <button class="btn btn-primary btn-primary-custom mt-3" type="submit">Сбросить пароль</button>
+              <button class="btn btn-outline btn-outline-custom mt-2" type="button"
+                onclick="window.location.href='../index.html'">Назад ко входу</button>
+            </div>
+          </form>
+
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script src="../scripts/config.js"></script>
+  <script>
+    // Шаг 1: отправка кода
+    document.getElementById("sendCodeBtn").addEventListener("click", async () => {
+      const email = document.getElementById("email").value.trim();
+      if (!email) {
+        alert("Введите email!");
+        return;
+      }
+
+      try {
+        const r = await fetch(window.API_BASE + "/api/auth/send-reset-code", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email }),
+        });
+
+        const data = await r.json().catch(() => ({}));
+        if (!r.ok) {
+          alert(data.error || "Ошибка отправки кода");
+        } else {
+          alert("Код сброса отправлен на email!");
+          document.getElementById("step1").style.display = "none";
+          document.getElementById("step2").style.display = "block";
+        }
+      } catch (err) {
+        alert("Ошибка соединения с сервером");
+      }
+    });
+
+    // Шаг 2: сброс пароля
+    document.getElementById("resetForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+
+      const email = document.getElementById("email").value.trim();
+      const code = document.getElementById("code").value.trim();
+      const newPassword = document.getElementById("newPassword").value;
+      const confirmPassword = document.getElementById("confirmPassword").value;
+
+      if (newPassword !== confirmPassword) {
+        alert("Пароли не совпадают!");
+        return;
+      }
+
+      const payload = { email, code, newPassword };
+
+      try {
+        const r = await fetch(window.API_BASE + "/api/auth/reset-password", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+
+        const data = await r.json().catch(() => ({}));
+        out.textContent = JSON.stringify(data, null, 2);
+
+        if (!r.ok) {
+          alert(data.error || "Ошибка сброса пароля");
+        } else {
+          alert("Пароль успешно изменён!");
+          window.location.href = "../index.html";
+        }
+      } catch (err) {
+        alert("Ошибка соединения с сервером");
+      }
+    });
+  </script>
+</body>
+
+</html>
