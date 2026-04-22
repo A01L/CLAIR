@@ -5,9 +5,9 @@
   "main": "express.js",
   "type": "module",
   "scripts": {
-    "dev": "node express.js",
-    "worker": "node worker.js",
-    "resume": "node resumePausedBacklog.js"
+    "dev": "node src/app.js",
+    "worker": "node src/worker.js",
+    "resume": "node src/resumePausedBacklog.js"
   },
   "author": "",
   "license": "ISC",
