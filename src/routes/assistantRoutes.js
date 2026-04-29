@@ -1,10 +1,13 @@
 import { Router } from "express";
-import { startSession, chatWithAssistant } from "../controllers/assistantController.js";
-import { channelKeyRequired } from "../middlewares/channelAuthMiddleware.js";
+import {
+  startSession,
+  chatWithAssistant
+} from "../controllers/assistantController.js";
+import { authRequired } from "../middlewares/authMiddleware.js";
 
 const router = Router();
 
-router.post("/session", channelKeyRequired, startSession);
-router.post("/chat", channelKeyRequired, chatWithAssistant);
+router.post("/session", authRequired, startSession);
+router.post("/chat", authRequired, chatWithAssistant);
 
 export default router;

@@ -1,76 +1,225 @@
 import { pool } from "../db/db.js";
-import {
-    createAssistantSession,
-    getSessionByIdOrToken,
-    addMessageToSession,
-    getSessionMessages,
-    getChannelContext
-} from "../services/assistantService.js";
-import { GoogleGenerativeAI } from "@google/generative-ai";
 import { decryptSecret } from "../utils/cryptoKey.js";
+import { geminiGenerateJson } from "../services/geminiClient.js";
+import {
+  createAssistantSession,
+  getSessionByToken,
+  updateSessionChannel,
+  addMessageToSession,
+  getSessionMessages,
+  verifyUserChannel,
+  getChannelContext,
+  getAllChannelsContext
+} from "../services/assistantService.js";
+import {
+  detectAssistantMode,
+  buildClairAssistantPrompt
+} from "../prompts/clairAssistantPrompt.js";
 
-const ASSISTANT_SYSTEM_PROMPT = `
-You are an AI assistant for a specific channel. Your goal is to help users navigate the site, answer questions about the product, and summarize common problems based on the context provided.
-Do not invent information. If you do not know the answer based on the context, politely say so.
-Limit responses to be concise and helpful.
-`;
+async function getUserAiKey(userId) {
+  const r = await pool.query(
+    `
+    SELECT gemini_api_key_enc
+    FROM clair_users
+    WHERE id = $1
+    `,
+    [Number(userId)]
+  );
 
-async function getChannelAiKey(channelId) {
-    const res = await pool.query(
-        `SELECT u.gemini_api_key_enc FROM clair_users u JOIN clair_channels c ON c.uid = u.id WHERE c.id = $1`,
-        [channelId]
-    );
-    if (res.rowCount === 0 || !res.rows[0].gemini_api_key_enc) return process.env.GEMINI_API_KEY;
-    return decryptSecret(res.rows[0].gemini_api_key_enc);
+  if (r.rowCount === 0) {
+    return process.env.GEMINI_API_KEY || null;
+  }
+
+  const enc = r.rows[0]?.gemini_api_key_enc;
+
+  if (!enc) {
+    return process.env.GEMINI_API_KEY || null;
+  }
+
+  return decryptSecret(enc);
 }
 
 export async function startSession(req, res) {
-    try {
-        const channelId = req.channel.id;
-        const session = await createAssistantSession(channelId);
-        res.json({ ok: true, session_token: session.session_token });
-    } catch (error) {
-        res.status(500).json({ error: error.message });
+  try {
+    const userId = Number(req.user?.id);
+    const channelId = req.body?.cid ? Number(req.body.cid) : null;
+
+    if (!userId) {
+      return res.status(401).json({ error: "Unauthorized" });
     }
+
+    if (channelId) {
+      const channel = await verifyUserChannel({
+        userId,
+        channelId
+      });
+
+      if (!channel) {
+        return res.status(404).json({
+          error: "Channel not found or access denied"
+        });
+      }
+    }
+
+    const session = await createAssistantSession({
+      userId,
+      channelId
+    });
+
+    return res.json({
+      ok: true,
+      session_token: session.session_token,
+      channel_id: session.channel_id || null
+    });
+  } catch (error) {
+    console.error("START ASSISTANT SESSION ERROR:", error);
+    return res.status(500).json({ error: error.message });
+  }
 }
 
 export async function chatWithAssistant(req, res) {
-    try {
-        const channelId = req.channel.id;
-        const { session_token, message } = req.body;
+  try {
+    const userId = Number(req.user?.id);
+    const {
+      session_token,
+      message,
+      cid = null,
+      mode = "auto"
+    } = req.body || {};
 
-        if (!session_token || !message) {
-            return res.status(400).json({ error: "session_token and message are required" });
-        }
-
-        const session = await getSessionByIdOrToken(session_token, true);
-        if (!session || session.channel_id !== channelId) {
-            return res.status(404).json({ error: "Session not found or invalid" });
-        }
-
-        await addMessageToSession(session.id, 'user', message);
-
-        const context = await getChannelContext(channelId);
-        const history = await getSessionMessages(session.id, 10);
-
-        let promptText = `${ASSISTANT_SYSTEM_PROMPT}\n\n${context}\n\nChat History:\n`;
-        history.forEach(msg => {
-            promptText += `${msg.role === 'user' ? 'User' : 'Assistant'}: ${msg.content}\n`;
-        });
-        promptText += `Assistant: `;
-
-        const aiKey = await getChannelAiKey(channelId);
-        const genAI = new GoogleGenerativeAI(aiKey);
-        const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
-
-        const result = await model.generateContent(promptText);
-        const aiResponse = result.response.text().trim();
-
-        await addMessageToSession(session.id, 'assistant', aiResponse);
-
-        res.json({ ok: true, response: aiResponse });
-
-    } catch (error) {
-        res.status(500).json({ error: error.message });
+    if (!userId) {
+      return res.status(401).json({ error: "Unauthorized" });
     }
+
+    if (!session_token || !message) {
+      return res.status(400).json({
+        error: "session_token and message are required"
+      });
+    }
+
+    const cleanMessage = String(message).trim();
+
+    if (!cleanMessage) {
+      return res.status(400).json({ error: "message is empty" });
+    }
+
+    if (cleanMessage.length > 3000) {
+      return res.status(400).json({
+        error: "message is too long"
+      });
+    }
+
+    const session = await getSessionByToken({
+      sessionToken: session_token,
+      userId
+    });
+
+    if (!session) {
+      return res.status(404).json({
+        error: "Session not found or invalid"
+      });
+    }
+
+    const requestedChannelId = cid ? Number(cid) : null;
+    let activeChannelId = requestedChannelId || session.channel_id || null;
+
+    if (requestedChannelId) {
+      const channel = await verifyUserChannel({
+        userId,
+        channelId: requestedChannelId
+      });
+
+      if (!channel) {
+        return res.status(404).json({
+          error: "Channel not found or access denied"
+        });
+      }
+
+      await updateSessionChannel({
+        sessionId: session.id,
+        channelId: requestedChannelId
+      });
+
+      activeChannelId = requestedChannelId;
+    }
+
+    const detectedMode = detectAssistantMode(
+      cleanMessage,
+      mode,
+      activeChannelId
+    );
+
+    await addMessageToSession(session.id, "user", cleanMessage);
+
+    const history = await getSessionMessages(session.id, 10);
+
+    let channelContext = "";
+    let allChannelsContext = "";
+
+    if (detectedMode === "channel_analytics") {
+      if (!activeChannelId) {
+        const answer =
+          "Для анализа конкретного канала нужно выбрать канал или передать cid. Также я могу сделать общую сводку по всем каналам.";
+
+        await addMessageToSession(session.id, "assistant", answer);
+
+        return res.json({
+          ok: true,
+          mode: detectedMode,
+          channel_id: null,
+          response: answer
+        });
+      }
+
+      channelContext = await getChannelContext({
+        userId,
+        channelId: activeChannelId
+      });
+    }
+
+    if (detectedMode === "all_analytics") {
+      allChannelsContext = await getAllChannelsContext({
+        userId
+      });
+    }
+
+    const prompt = buildClairAssistantPrompt({
+      mode: detectedMode,
+      message: cleanMessage,
+      history,
+      channelContext,
+      allChannelsContext
+    });
+
+    const aiKey = await getUserAiKey(userId);
+
+    if (!aiKey) {
+      return res.status(400).json({
+        error: "Gemini API key is not configured"
+      });
+    }
+
+    const aiResponse = await geminiGenerateJson({
+      prompt,
+      aiKey
+    });
+
+    const cleanResponse = String(aiResponse || "").trim();
+
+    await addMessageToSession(
+      session.id,
+      "assistant",
+      cleanResponse
+    );
+
+    return res.json({
+      ok: true,
+      mode: detectedMode,
+      channel_id: activeChannelId || null,
+      response: cleanResponse
+    });
+  } catch (error) {
+    console.error("ASSISTANT CHAT ERROR:", error);
+    return res.status(500).json({ error: error.message });
+  }
 }

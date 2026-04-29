@@ -1,7 +1,6 @@
 import { invalidateCachePattern, getCache, setCache } from "../cache/redis.js";
 import { deleteElasticAppeal, deleteAllElasticAppealsByChannel } from "../search/elastic.js";
 import { pool } from "../db/db.js";
-import { SYSTEM_PROMPT } from "../prompts/appealPrompt.js";
 import { buildSystemPrompt } from "../prompts/promptBuilder.js";
 import { geminiGenerateJson } from "../services/geminiClient.js";
 import { safeJsonParse } from "../utils/safeJsonParse.js";
@@ -68,6 +67,17 @@ async function increaseSpamScoreForExistingAppeal({
   return updated.rows[0] || null;
 }
 
+async function invalidateAppealCaches(userId) {
+  try {
+    await invalidateCachePattern(`appeals:history:${userId}:*`);
+    await invalidateCachePattern(`appeals:map:${userId}:*`);
+    await invalidateCachePattern(`reports:${userId}:*`);
+    await invalidateCachePattern(`channels:${userId}:*`);
+  } catch (e) {
+    console.warn("Cache invalidation warning:", e?.message || e);
+  }
+}
+
 /* =========================
    JOB — вызывается воркером
 ========================= */
@@ -92,7 +102,7 @@ export async function analyzeAndCreateAppealJob({
 
   const ch = await pool.query(
     `
-    SELECT id
+    SELECT id, custom_prompt, custom_prompt_status
     FROM clair_channels
     WHERE id = $1 AND uid = $2
     `,
@@ -102,6 +112,8 @@ export async function analyzeAndCreateAppealJob({
   if (ch.rowCount === 0) {
     throw new Error("Channel not found or not yours");
   }
+
+  const channel = ch.rows[0];
 
   /* =========================
      DUPLICATE / SPAM CHECK FIRST
@@ -117,17 +129,30 @@ export async function analyzeAndCreateAppealJob({
     ipAddress: cleanIp
   });
 
-  // Check if an exact match exists for this channel, increment score and return
-  if (spamInfo.existingAppealId) {
+  if ((spamInfo.duplicateCount || 0) >= 1 || spamInfo.existingAppealId) {
+    const updatedAppeal = await increaseSpamScoreForExistingAppeal({
+      channelId,
+      textHash,
+      increment: 1
+    });
+
     console.log("⛔ Duplicate detected. Skip Gemini and DB insert.", {
       channelId,
+      textHash,
+      duplicateCount: spamInfo.duplicateCount,
       existingAppealId: spamInfo.existingAppealId,
-      spamScore: spamInfo.spamScore
+      updatedAppealId: updatedAppeal?.id,
+      updatedSpamScore: updatedAppeal?.spam_score
     });
+
+    await invalidateAppealCaches(uid);
+
     return {
-        id: spamInfo.existingAppealId,
-        spamScore: spamInfo.spamScore,
-        skipped: true
+      ok: true,
+      skipped: true,
+      reason: "duplicate",
+      updated_existing_appeal: updatedAppeal,
+      spam: spamInfo
     };
   }
 
@@ -135,12 +160,18 @@ export async function analyzeAndCreateAppealJob({
      GEMINI ONLY FOR UNIQUE TEXT
   ========================= */
 
-  const channelData = await pool.query('SELECT custom_prompt FROM clair_channels WHERE id = $1', [channelId]);
-  const customPrompt = channelData.rows[0]?.custom_prompt || "";
-  const systemPromptToUse = buildSystemPrompt(customPrompt);
+  const activeCustomPrompt =
+    channel.custom_prompt_status === "approved"
+      ? channel.custom_prompt || ""
+      : "";
 
+  const systemPromptToUse = buildSystemPrompt(activeCustomPrompt);
   const cleanKey = await getUserGeminiKeyOrThrow(uid);
-  const prompt = `${systemPromptToUse}\n\nВходной текст:\n${cleanText}`;
+
+  const prompt = `${systemPromptToUse}
+
+Входной текст:
+${cleanText}`;
 
   let raw = "";
   let data = null;
@@ -172,7 +203,11 @@ export async function analyzeAndCreateAppealJob({
   const emotion = Number.isFinite(emotionRatingNum) ? emotionRatingNum : null;
 
   const anomalyType = data?.anomaly_type ?? null;
-  const anomalyComment = data?.anomaly_comment ?? data?.anomaly_com ?? null;
+
+  const anomalyComment =
+    data?.anomaly_comment ??
+    data?.anomaly_com ??
+    null;
 
   const aiComment =
     data?.ai_comment ??
@@ -180,7 +215,10 @@ export async function analyzeAndCreateAppealJob({
     data?.comment ??
     (raw ? raw.slice(0, 500) : null);
 
-  const aiSolution = data?.ai_solution ?? data?.solution ?? null;
+  const aiSolution =
+    data?.ai_solution ??
+    data?.solution ??
+    null;
 
   const isAnomaly =
     typeof data?.is_anomaly === "boolean"
@@ -206,22 +244,22 @@ export async function analyzeAndCreateAppealJob({
         spam_score
       )
     VALUES
-      ($1, $2, $3, $4, 'new', $5, $6, $7, $8, $9, $10, $11, $12)
+      ($1, NULL, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
     RETURNING *
     `,
     [
       channelId,
-      parsed.emotion_rating || null,
-      parsed.emotion || null,
-      parsed.appeal_type || null,
-      parsed.anomaly_type || null,
-      parsed.anomaly_comment || null,
-      parsed.ai_comment || null,
-      parsed.text || cleanText,
-      Boolean(parsed.is_anomaly),
-      parsed.ai_solution || null,
+      emotion,
+      appealType,
+      status,
+      anomalyType,
+      anomalyComment,
+      aiComment,
+      cleanText,
+      Boolean(isAnomaly),
+      aiSolution,
       textHash,
-      spamInfo.spamScore || 0
+      0
     ]
   );
 
@@ -251,6 +289,8 @@ export async function analyzeAndCreateAppealJob({
   } catch (e) {
     console.error("❌ save appeal IP meta error:", e?.message || e);
   }
+
+  await invalidateAppealCaches(uid);
 
   return {
     ok: true,
@@ -390,6 +430,14 @@ export async function deleteAppealById(req, res) {
       [appealId]
     );
 
+    try {
+      await deleteElasticAppeal(appealId);
+    } catch (e) {
+      console.warn("Elastic delete warning:", e?.message || e);
+    }
+
+    await invalidateAppealCaches(userId);
+
     return res.json({
       ok: true,
       deleted: del.rows[0]
@@ -441,6 +489,14 @@ export async function deleteAllAppealsByChannel(req, res) {
       [channelId]
     );
 
+    try {
+      await deleteAllElasticAppealsByChannel(channelId);
+    } catch (e) {
+      console.warn("Elastic channel delete warning:", e?.message || e);
+    }
+
+    await invalidateAppealCaches(userId);
+
     return res.json({
       ok: true,
       channel_id: channelId,
@@ -461,11 +517,11 @@ export async function getAppealsHistory(req, res) {
   try {
     const userId = Number(req.user?.id);
     const channelId = req.query.channel_id ? Number(req.query.channel_id) : null;
-    const status = req.query.status;
-    const type = req.query.type;
+    const status = req.query.status ? String(req.query.status) : null;
+    const type = req.query.type ? String(req.query.type) : null;
     const anomaly = req.query.anomaly;
     const limit = Math.min(Number(req.query.limit) || 50, 100);
-    const offset = Number(req.query.offset) || 0;
+    const offset = Math.max(Number(req.query.offset) || 0, 0);
 
     if (!userId) {
       return res.status(401).json({ error: "Unauthorized" });
@@ -481,19 +537,22 @@ export async function getAppealsHistory(req, res) {
 
     if (channelId) {
       params.push(channelId);
-      whereClause += " AND c.id = $" + paramIndex++;
+      whereClause += ` AND c.id = $${paramIndex++}`;
     }
+
     if (status) {
       params.push(status);
-      whereClause += " AND a.status = $" + paramIndex++;
+      whereClause += ` AND a.status = $${paramIndex++}`;
     }
+
     if (type) {
       params.push(type);
-      whereClause += " AND a.type = $" + paramIndex++;
+      whereClause += ` AND a.type = $${paramIndex++}`;
     }
-    if (anomaly) {
-      params.push(anomaly === 'true');
-      whereClause += " AND a.is_anomaly = $" + paramIndex++;
+
+    if (anomaly === "true" || anomaly === "false") {
+      params.push(anomaly === "true");
+      whereClause += ` AND a.is_anomaly = $${paramIndex++}`;
     }
 
     const r = await pool.query(
@@ -507,6 +566,9 @@ export async function getAppealsHistory(req, res) {
         a.status,
         a.type,
         a.is_anomaly,
+        a.anomaly_type,
+        a.ai_com,
+        a.ai_solution,
         a.created_at,
         m.ip_address,
         m.country,
@@ -522,37 +584,58 @@ export async function getAppealsHistory(req, res) {
       params
     );
 
-    const countParams = [userId]; // $1 is userId
+    const countParams = [userId];
     let countWhereClause = " c.uid = $1 ";
     let countParamIndex = 2;
 
     if (channelId) {
       countParams.push(channelId);
-      countWhereClause += " AND c.id = $" + countParamIndex++;
+      countWhereClause += ` AND c.id = $${countParamIndex++}`;
     }
+
     if (status) {
       countParams.push(status);
-      countWhereClause += " AND a.status = $" + countParamIndex++;
+      countWhereClause += ` AND a.status = $${countParamIndex++}`;
     }
+
     if (type) {
       countParams.push(type);
-      countWhereClause += " AND a.type = $" + countParamIndex++;
+      countWhereClause += ` AND a.type = $${countParamIndex++}`;
     }
-    if (anomaly) {
-      countParams.push(anomaly === 'true');
-      countWhereClause += " AND a.is_anomaly = $" + countParamIndex++;
+
+    if (anomaly === "true" || anomaly === "false") {
+      countParams.push(anomaly === "true");
+      countWhereClause += ` AND a.is_anomaly = $${countParamIndex++}`;
     }
 
     const countRes = await pool.query(
-      `SELECT COUNT(a.id) FROM clair_appeal a INNER JOIN clair_channels c ON c.id = a.cid WHERE ${countWhereClause}`,
+      `
+      SELECT COUNT(a.id)::int AS total
+      FROM clair_appeal a
+      INNER JOIN clair_channels c ON c.id = a.cid
+      WHERE ${countWhereClause}
+      `,
       countParams
     );
-    const total = parseInt(countRes.rows[0].count, 10);
 
-    const responseData = { ok: true, data: r.rows, pagination: { total, limit, offset } };
+    const total = Number(countRes.rows[0]?.total || 0);
+
+    const responseData = {
+      ok: true,
+      data: r.rows,
+      pagination: {
+        total,
+        limit,
+        offset,
+        has_more: offset + r.rows.length < total
+      }
+    };
+
     await setCache(cacheKey, responseData, 300);
+
     return res.json(responseData);
   } catch (error) {
+    console.error("GET APPEALS HISTORY ERROR:", error);
     return res.status(500).json({ error: error.message });
   }
 }
@@ -572,6 +655,7 @@ export async function getAppealsMapData(req, res) {
 
     const params = [userId];
     let whereChannel = "";
+
     if (channelId) {
       params.push(channelId);
       whereChannel = " AND c.id = $2 ";
@@ -583,22 +667,31 @@ export async function getAppealsMapData(req, res) {
         m.country,
         m.region,
         m.city,
-        COUNT(a.id) as total_appeals,
-        SUM(CASE WHEN a.is_anomaly THEN 1 ELSE 0 END) as anomaly_count,
-        SUM(CASE WHEN a.spam_score > 0 THEN 1 ELSE 0 END) as spammed_count
+        COUNT(a.id)::int AS total_appeals,
+        SUM(CASE WHEN a.is_anomaly THEN 1 ELSE 0 END)::int AS anomaly_count,
+        SUM(CASE WHEN COALESCE(a.spam_score, 0) > 0 THEN 1 ELSE 0 END)::int AS spammed_count
       FROM clair_appeal a
       INNER JOIN clair_channels c ON c.id = a.cid
       INNER JOIN clair_appeal_ip_meta m ON m.appeal_id = a.id
-      WHERE c.uid = $1 ${whereChannel} AND m.country IS NOT NULL
+      WHERE c.uid = $1
+        ${whereChannel}
+        AND m.country IS NOT NULL
       GROUP BY m.country, m.region, m.city
+      ORDER BY total_appeals DESC
       `,
       params
     );
 
-    const responseData = { ok: true, data: r.rows };
+    const responseData = {
+      ok: true,
+      data: r.rows
+    };
+
     await setCache(cacheKey, responseData, 300);
+
     return res.json(responseData);
   } catch (error) {
+    console.error("GET APPEALS MAP DATA ERROR:", error);
     return res.status(500).json({ error: error.message });
   }
 }

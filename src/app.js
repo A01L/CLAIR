@@ -40,7 +40,7 @@ app.use(
 );
 
 app.options(
-  "*",
+  "/*splat",
   cors({
     origin: true,
     credentials: true

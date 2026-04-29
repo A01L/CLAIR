@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { authRequired } from "../middlewares/authMiddleware.js";
+
 import {
   createChannel,
   getMyChannels,
@@ -10,11 +11,20 @@ import {
   deleteChannel
 } from "../controllers/channels.js";
 
+import {
+  getCustomPrompt,
+  updateCustomPrompt,
+  deleteCustomPrompt
+} from "../controllers/channelPrompts.js";
+
 const router = Router();
 
 router.get("/", authRequired, getMyChannels);
+
 router.get("/:id/prompt", authRequired, getCustomPrompt);
 router.post("/:id/prompt", authRequired, updateCustomPrompt);
+router.delete("/:id/prompt", authRequired, deleteCustomPrompt);
+
 router.get("/:cid", authRequired, getChannelById);
 router.post("/", authRequired, createChannel);
 router.patch("/:cid", authRequired, patchChannel);
