@@ -24,7 +24,7 @@ JSON формат:
 {
   "text": string,
   "ai_comment": string,
-  "appeal_type": "criticism"|"request"|"suggestion"|"bug",
+  "appeal_type": "criticism"|"request"|"suggestion"|"bug"|"anomaly"|,
   "emotion_rating": 0|1|2|3|4|5,
   "is_anomaly": boolean,
   "anomaly_type": "spam"|"off_topic"|"unknown"|"misinformation"|"abuse"|"threat"|null,

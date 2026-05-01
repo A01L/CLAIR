@@ -16,7 +16,7 @@ import { pool, checkDb } from "./db/db.js";
 import { connectRedis } from "./cache/redis.js";
 import { initElastic } from "./search/elastic.js";
 import { authRequired } from "./middlewares/authMiddleware.js";
-
+import searchRoutes from "./routes/searchRoutes.js";
 const app = express();
 const port = 3000;
 
@@ -48,7 +48,7 @@ app.options(
 );
 
 app.use(express.json({ limit: "1mb" }));
-
+app.use("/api/search", searchRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/context", geminiTranslate);
 app.use("/api", context);
