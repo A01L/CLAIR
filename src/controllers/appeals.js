@@ -4,6 +4,7 @@ import { pool } from "../db/db.js";
 import { buildSystemPrompt } from "../prompts/promptBuilder.js";
 import { geminiGenerateJson } from "../services/geminiClient.js";
 import { safeJsonParse } from "../utils/safeJsonParse.js";
+import { normalizeAiResult } from "../utils/normalizeAiResult.js";
 import { publishToQueue } from "../queue/rabbit.js";
 import { decryptSecret } from "../utils/cryptoKey.js";
 import { getClientIp, getUserAgent } from "../utils/requestMeta.js";
@@ -196,34 +197,36 @@ ${cleanText}`;
     data = null;
   }
 
-  const appealType = data?.appeal_type ?? data?.type ?? null;
-  const status = data?.status ?? "new";
+  /* =========================
+     NORMALIZE AI RESULT
+     ВАЖНО: исправляет кривые связки:
+     is_anomaly=true + appeal_type!="anomaly"
+  ========================= */
 
-  const emotionRatingNum = Number(data?.emotion_rating);
-  const emotion = Number.isFinite(emotionRatingNum) ? emotionRatingNum : null;
+  data = normalizeAiResult(data, cleanText);
 
-  const anomalyType = data?.anomaly_type ?? null;
+  console.log("===== NORMALIZED AI DATA =====");
+  console.log(data);
+  console.log("===== END NORMALIZED =====\n");
 
-  const anomalyComment =
-    data?.anomaly_comment ??
-    data?.anomaly_com ??
-    null;
+  const appealType = data.appeal_type;
+  const status = data.status;
+
+  const emotionRatingNum = Number(data.emotion_rating);
+  const emotion = Number.isFinite(emotionRatingNum) ? emotionRatingNum : 0;
+
+  const anomalyType = data.anomaly_type;
+  const anomalyComment = data.anomaly_comment;
 
   const aiComment =
-    data?.ai_comment ??
-    data?.ai_com ??
-    data?.comment ??
-    (raw ? raw.slice(0, 500) : null);
+    data.ai_comment ||
+    (raw ? raw.slice(0, 500) : "AI не вернул комментарий.");
 
   const aiSolution =
-    data?.ai_solution ??
-    data?.solution ??
-    null;
+    data.ai_solution ||
+    "Передать обращение на ручную проверку.";
 
-  const isAnomaly =
-    typeof data?.is_anomaly === "boolean"
-      ? data.is_anomaly
-      : Boolean(data?.is_anomaly);
+  const isAnomaly = Boolean(data.is_anomaly);
 
   const ins = await pool.query(
     `
@@ -256,7 +259,7 @@ ${cleanText}`;
       anomalyComment,
       aiComment,
       cleanText,
-      Boolean(isAnomaly),
+      isAnomaly,
       aiSolution,
       textHash,
       0

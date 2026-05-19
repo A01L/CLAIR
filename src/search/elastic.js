@@ -135,3 +135,5 @@ export async function deleteAllElasticAppealsByChannel(cid) {
     console.error('❌ Failed to delete by channel from elasticsearch:', err.message);
   }
 }
+
+
