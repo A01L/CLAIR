@@ -8,7 +8,8 @@ import {
   patchChannel,
   setChannelApiKey,
   rotateChannelApiKey,
-  deleteChannel
+  deleteChannel,
+  setChannelProcessingStatus
 } from "../controllers/channels.js";
 
 import {
@@ -25,8 +26,11 @@ router.get("/:id/prompt", authRequired, getCustomPrompt);
 router.post("/:id/prompt", authRequired, updateCustomPrompt);
 router.delete("/:id/prompt", authRequired, deleteCustomPrompt);
 
-router.get("/:cid", authRequired, getChannelById);
 router.post("/", authRequired, createChannel);
+
+router.patch("/:cid/status", authRequired, setChannelProcessingStatus);
+
+router.get("/:cid", authRequired, getChannelById);
 router.patch("/:cid", authRequired, patchChannel);
 router.put("/:cid/api-key", authRequired, setChannelApiKey);
 router.post("/:cid/rotate-key", authRequired, rotateChannelApiKey);

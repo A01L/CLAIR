@@ -9,6 +9,10 @@ function normalizeDomain(domain = "") {
   return String(domain).trim().toLowerCase();
 }
 
+function normalizeProcessingStatus(status = "") {
+  return String(status).trim().toLowerCase();
+}
+
 export async function createChannel(req, res) {
   try {
     const uid = Number(req.user?.id);
@@ -24,14 +28,35 @@ export async function createChannel(req, res) {
     }
 
     const apiKey = generateApiKey();
+    const last4 = apiKey.slice(-4);
 
     const r = await pool.query(
       `
-      INSERT INTO clair_channels (uid, name, api_key, allowed_domain, is_active)
-      VALUES ($1, $2, $3, $4, TRUE)
-      RETURNING id, uid, name, allowed_domain, is_active, created_at
+      INSERT INTO clair_channels (
+        uid,
+        name,
+        api_key,
+        api_key_last4,
+        allowed_domain,
+        is_active,
+        processing_status
+      )
+      VALUES ($1, $2, $3, $4, $5, TRUE, 'active')
+      RETURNING
+        id,
+        uid,
+        name,
+        allowed_domain,
+        is_active,
+        processing_status,
+        processing_pause_reason,
+        processing_paused_at,
+        processing_resumed_at,
+        api_key_last4,
+        created_at,
+        updated_at
       `,
-      [uid, name, apiKey, domain]
+      [uid, name, apiKey, last4, domain]
     );
 
     return res.status(201).json({
@@ -57,9 +82,14 @@ export async function getMyChannels(req, res) {
       SELECT
         c.id,
         c.uid,
+        c.channel_key,
         c.name,
         c.allowed_domain,
         c.is_active,
+        c.processing_status,
+        c.processing_pause_reason,
+        c.processing_paused_at,
+        c.processing_resumed_at,
         c.api_key_last4,
         c.created_at,
         c.updated_at,
@@ -100,9 +130,14 @@ export async function getChannelById(req, res) {
       SELECT
         id,
         uid,
+        channel_key,
         name,
         allowed_domain,
         is_active,
+        processing_status,
+        processing_pause_reason,
+        processing_paused_at,
+        processing_resumed_at,
         api_key_last4,
         created_at,
         updated_at
@@ -139,12 +174,16 @@ export async function patchChannel(req, res) {
     }
 
     const name = typeof req.body?.name === "string" ? req.body.name.trim() : null;
-    const allowedDomain = typeof req.body?.allowed_domain === "string"
-      ? normalizeDomain(req.body.allowed_domain)
-      : null;
-    const isActive = typeof req.body?.is_active === "boolean"
-      ? req.body.is_active
-      : null;
+
+    const allowedDomain =
+      typeof req.body?.allowed_domain === "string"
+        ? normalizeDomain(req.body.allowed_domain)
+        : null;
+
+    const isActive =
+      typeof req.body?.is_active === "boolean"
+        ? req.body.is_active
+        : null;
 
     if (name === null && allowedDomain === null && isActive === null) {
       return res.status(400).json({ error: "Nothing to update" });
@@ -159,7 +198,20 @@ export async function patchChannel(req, res) {
         is_active = COALESCE($3, is_active),
         updated_at = NOW()
       WHERE id = $4 AND uid = $5
-      RETURNING id, uid, name, allowed_domain, is_active, api_key_last4, created_at, updated_at
+      RETURNING
+        id,
+        uid,
+        channel_key,
+        name,
+        allowed_domain,
+        is_active,
+        processing_status,
+        processing_pause_reason,
+        processing_paused_at,
+        processing_resumed_at,
+        api_key_last4,
+        created_at,
+        updated_at
       `,
       [name, allowedDomain, isActive, cid, uid]
     );
@@ -170,6 +222,89 @@ export async function patchChannel(req, res) {
 
     return res.json({
       ok: true,
+      channel: r.rows[0]
+    });
+  } catch (e) {
+    return res.status(500).json({ error: e.message });
+  }
+}
+
+export async function setChannelProcessingStatus(req, res) {
+  try {
+    const uid = Number(req.user?.id);
+    const cid = Number(req.params.cid);
+
+    const processingStatus = normalizeProcessingStatus(req.body?.processing_status);
+    const reason = String(req.body?.reason || "").trim() || null;
+
+    if (!uid) {
+      return res.status(401).json({ error: "Unauthorized" });
+    }
+
+    if (!cid) {
+      return res.status(400).json({ error: "Invalid cid" });
+    }
+
+    if (!["active", "paused"].includes(processingStatus)) {
+      return res.status(400).json({
+        error: "Invalid processing_status",
+        allowed: ["active", "paused"]
+      });
+    }
+
+    const r = await pool.query(
+      `
+      UPDATE clair_channels
+      SET
+        processing_status = $1,
+
+        processing_pause_reason = CASE
+          WHEN $1 = 'paused' THEN $2
+          ELSE NULL
+        END,
+
+        processing_paused_at = CASE
+          WHEN $1 = 'paused' THEN NOW()
+          ELSE processing_paused_at
+        END,
+
+        processing_resumed_at = CASE
+          WHEN $1 = 'active' THEN NOW()
+          ELSE processing_resumed_at
+        END,
+
+        updated_at = NOW()
+      WHERE id = $3 AND uid = $4
+      RETURNING
+        id,
+        uid,
+        channel_key,
+        name,
+        allowed_domain,
+        is_active,
+        processing_status,
+        processing_pause_reason,
+        processing_paused_at,
+        processing_resumed_at,
+        api_key_last4,
+        created_at,
+        updated_at
+      `,
+      [processingStatus, reason, cid, uid]
+    );
+
+    if (r.rowCount === 0) {
+      return res.status(404).json({
+        error: "Channel not found or access denied"
+      });
+    }
+
+    return res.json({
+      ok: true,
+      message:
+        processingStatus === "paused"
+          ? "Channel paused"
+          : "Channel activated",
       channel: r.rows[0]
     });
   } catch (e) {

@@ -52,12 +52,12 @@ services:
     restart: unless-stopped
 
   elasticsearch:
-    image: docker.elastic.co/elasticsearch/elasticsearch:8.13.0          
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.13.0
     container_name: clair_elasticsearch
     environment:
       - discovery.type=single-node
       - xpack.security.enabled=false
-      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+      - ES_JAVA_OPTS=-Xms512m -Xmx512m
     ports:
       - "9200:9200"
     volumes:
@@ -75,14 +75,19 @@ services:
     ports:
       - "3000:3000"
     environment:
+      - PORT=3000
+      - PUBLIC_API_URL=${PUBLIC_API_URL:-http://localhost:3000}
+
       - PGHOST=postgres
       - PGPORT=5432
       - PGUSER=${PGUSER:-postgres}
       - PGPASSWORD=${PGPASSWORD:-postgres}
       - PGDATABASE=${PGDATABASE:-clair}
+
       - RABBIT_URL=amqp://${RABBIT_USER:-guest}:${RABBIT_PASS:-guest}@rabbitmq:5672
       - REDIS_URL=redis://redis:6379
       - ELASTIC_URL=http://elasticsearch:9200
+
       - GEMINI_API_KEY=${GEMINI_API_KEY}
       - JWT_SECRET=${JWT_SECRET:-secret}
       - KEY_ENCRYPTION_SECRET=${KEY_ENCRYPTION_SECRET:-secret}
@@ -107,9 +112,11 @@ services:
       - PGUSER=${PGUSER:-postgres}
       - PGPASSWORD=${PGPASSWORD:-postgres}
       - PGDATABASE=${PGDATABASE:-clair}
+
       - RABBIT_URL=amqp://${RABBIT_USER:-guest}:${RABBIT_PASS:-guest}@rabbitmq:5672
       - REDIS_URL=redis://redis:6379
       - ELASTIC_URL=http://elasticsearch:9200
+
       - GEMINI_API_KEY=${GEMINI_API_KEY}
       - JWT_SECRET=${JWT_SECRET:-secret}
       - KEY_ENCRYPTION_SECRET=${KEY_ENCRYPTION_SECRET:-secret}
