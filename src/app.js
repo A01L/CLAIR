@@ -26,11 +26,12 @@ const port = Number(process.env.PORT || 3000);
 
 
 
-try {
-  await connectRedis();
-  console.log("Redis connected");
-} catch (e) {
-  console.warn("Redis connection warning:", e?.message || e);
+const redisOk = await connectRedis();
+
+if (redisOk) {
+  console.log("✅ Redis connected and ready");
+} else {
+  console.warn("⚠️ Redis is not connected. Cache will be disabled.");
 }
 
 try {

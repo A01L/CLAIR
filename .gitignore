@@ -1,9 +1,10 @@
-JWT_SECRET=super_secret_change_ыme
-JWT_ACCESS_TTL=15m
+.env
 
+*.tar
+*.dump
+*.backup
 
-PGHOST=127.0.0.1
-PGPORT=5434
-PGUSER=postgres
-PGPASSWORD=u4x5k6la8dL@
-PGDATABASE=postgres
+backup.sql
+clair_backup.sql
+clair_test.backup
+clair_all_images.tar
