@@ -1,5 +1,9 @@
 import { invalidateCachePattern, getCache, setCache } from "../cache/redis.js";
-import { deleteElasticAppeal, deleteAllElasticAppealsByChannel } from "../search/elastic.js";
+import {
+  indexAppeal,
+  deleteElasticAppeal,
+  deleteAllElasticAppealsByChannel
+} from "../search/elastic.js";
 import { pool } from "../db/db.js";
 import { buildSystemPrompt } from "../prompts/promptBuilder.js";
 import { geminiGenerateJson } from "../services/geminiClient.js";
@@ -60,7 +64,7 @@ async function increaseSpamScoreForExistingAppeal({
       ORDER BY id DESC
       LIMIT 1
     )
-    RETURNING id, cid, text, text_hash, spam_score, created_at
+    RETURNING *
     `,
     [Number(increment), Number(channelId), textHash]
   );
@@ -137,6 +141,14 @@ export async function analyzeAndCreateAppealJob({
       increment: 1
     });
 
+    if (updatedAppeal) {
+      try {
+        await indexAppeal(updatedAppeal);
+      } catch (e) {
+        console.warn("Elastic duplicate update warning:", e?.message || e);
+      }
+    }
+
     console.log("⛔ Duplicate detected. Skip Gemini and DB insert.", {
       channelId,
       textHash,
@@ -199,8 +211,6 @@ ${cleanText}`;
 
   /* =========================
      NORMALIZE AI RESULT
-     ВАЖНО: исправляет кривые связки:
-     is_anomaly=true + appeal_type!="anomaly"
   ========================= */
 
   data = normalizeAiResult(data, cleanText);
@@ -267,6 +277,12 @@ ${cleanText}`;
   );
 
   const appeal = ins.rows[0];
+
+  try {
+    await indexAppeal(appeal);
+  } catch (e) {
+    console.warn("Elastic index warning:", e?.message || e);
+  }
 
   try {
     if (cleanIp) {
